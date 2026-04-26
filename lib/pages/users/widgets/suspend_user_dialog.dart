@@ -17,9 +17,9 @@ class _SuspendUserDialogState extends State<SuspendUserDialog> {
 
   final List<String> _reasons = const [
     'Spam',
-    'Konten Tidak Pantas',
-    'Permintaan Pengguna',
-    'Lainnya',
+    'Inappropriate Content',
+    'User Request',
+    'Other',
   ];
 
   void _submit() {
@@ -44,7 +44,7 @@ class _SuspendUserDialogState extends State<SuspendUserDialog> {
             children: [
               Row(
                 children: [
-                  Text('Suspend Akun', style: AppTextStyles.h2),
+                  Text('Account Suspension', style: AppTextStyles.h2),
                   const Spacer(),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
@@ -70,7 +70,7 @@ class _SuspendUserDialogState extends State<SuspendUserDialog> {
                     const SizedBox(width: AppSizes.spaceM),
                     Expanded(
                       child: Text(
-                        'Akun $email akan di-suspend dan tidak dapat login ke aplikasi mobile.',
+                        'Account $email will be suspended and unable to log in to the mobile app.',
                         style: AppTextStyles.body.copyWith(
                           color: AppColors.primary,
                         ),
@@ -82,7 +82,7 @@ class _SuspendUserDialogState extends State<SuspendUserDialog> {
               const SizedBox(height: AppSizes.spaceL),
               Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Alasan Suspend *', style: AppTextStyles.smallBold),
+                child: Text('Reason for Suspension *', style: AppTextStyles.smallBold),
               ),
               const SizedBox(height: AppSizes.spaceS),
               DropdownButtonFormField<String>(
@@ -102,7 +102,7 @@ class _SuspendUserDialogState extends State<SuspendUserDialog> {
                 children: [
                   OutlinedButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Batal'),
+                    child: const Text('Cancel'),
                   ),
                   const SizedBox(width: AppSizes.spaceM),
                   ElevatedButton(
@@ -111,7 +111,7 @@ class _SuspendUserDialogState extends State<SuspendUserDialog> {
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                     ),
-                    child: const Text('Suspend Akun'),
+                    child: const Text('Account Suspension'),
                   ),
                 ],
               ),
