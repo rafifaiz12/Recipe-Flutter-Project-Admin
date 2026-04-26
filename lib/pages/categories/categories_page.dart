@@ -215,8 +215,6 @@ class _CategoriesPageState extends State<CategoriesPage> {
           children: [
             _buildHeader(),
             const SizedBox(height: AppSizes.spaceXL),
-            _buildInfoBox(),
-            const SizedBox(height: AppSizes.spaceL),
             ..._categoryGroups.map((group) {
               final categories = _categoriesByGroupId(group['id'] as String);
 
@@ -275,34 +273,6 @@ class _CategoriesPageState extends State<CategoriesPage> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildInfoBox() {
-    return Container(
-      width: 760,
-      padding: const EdgeInsets.all(AppSizes.paddingM),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.info_outline,
-            color: AppColors.primary,
-            size: AppSizes.iconM,
-          ),
-          const SizedBox(width: AppSizes.spaceM),
-          Expanded(
-            child: Text(
-              'Admin dapat membuat parent/group sendiri, lalu menambahkan kategori/child di dalamnya.',
-              style: AppTextStyles.bodySecondary,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
