@@ -16,10 +16,10 @@ class AnalyticsPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Analytics & Laporan', style: AppTextStyles.h1),
+          Text('Analytics & Reports', style: AppTextStyles.h1),
           const SizedBox(height: AppSizes.spaceS),
           Text(
-            'Statistik dan insight penggunaan aplikasi',
+            'Application Usage Statistics and Insights',
             style: AppTextStyles.bodySecondary,
           ),
           const SizedBox(height: AppSizes.spaceXL),
@@ -41,12 +41,12 @@ class AnalyticsPage extends StatelessWidget {
                 ),
                 const SizedBox(width: AppSizes.spaceS),
                 Text(
-                  'Terakhir diperbarui: 2026-04-12 08:00',
+                  'Last updated: 2026-04-12 08:00',
                   style: AppTextStyles.bodySecondary,
                 ),
                 const Spacer(),
                 Text(
-                  'Data di-refresh otomatis setiap 24 jam',
+                  'Data refreshes every 24 hours automatically',
                   style: AppTextStyles.caption,
                 ),
               ],
@@ -62,7 +62,7 @@ class AnalyticsPage extends StatelessWidget {
                   icon: Icons.group_outlined,
                   iconBackgroundColor: Color(0xFFE0ECFF),
                   iconColor: Color(0xFF2563EB),
-                  label: 'Total Pengguna',
+                  label: 'Total Users',
                   value: '1,247',
                 ),
               ),
@@ -92,10 +92,10 @@ class AnalyticsPage extends StatelessWidget {
             child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Resep Terpopuler', style: AppTextStyles.h2),
+                Text('Most Popular Recipes', style: AppTextStyles.h2),
                 SizedBox(height: AppSizes.spaceS),
                 Text(
-                  'Top 10 resep paling banyak difavoritkan pengguna',
+                  'Top 10 Most Favorited Recipes by Users',
                   style: AppTextStyles.bodySecondary,
                 ),
                 SizedBox(height: AppSizes.spaceXL),
@@ -110,23 +110,23 @@ class AnalyticsPage extends StatelessWidget {
             children: [
               Expanded(
                 child: AnalyticsSummaryCard(
-                  title: 'Kategori Terpopuler',
-                  value: 'Makanan Utama',
-                  subtitle: '328 favorites total',
+                  title: 'Most Popular Categories',
+                  value: 'Main Courses',
+                  subtitle: '328 Total Favorites',
                 ),
               ),
               SizedBox(width: AppSizes.spaceL),
               Expanded(
                 child: AnalyticsSummaryCard(
-                  title: 'Rata-rata Rating',
+                  title: 'Average Rating',
                   value: '4.6 ⭐',
-                  subtitle: 'Dari 892 review',
+                  subtitle: 'From 892 Reviews',
                 ),
               ),
               SizedBox(width: AppSizes.spaceL),
               Expanded(
                 child: AnalyticsSummaryCard(
-                  title: 'Template Meal Plan Aktif',
+                  title: 'Active Meal Plan Templates',
                   value: '12',
                   subtitle: '8 published, 4 draft',
                 ),
