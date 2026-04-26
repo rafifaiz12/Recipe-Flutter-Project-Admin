@@ -66,7 +66,7 @@ class _RecipePickerDialogState extends State<RecipePickerDialog> {
               padding: const EdgeInsets.all(AppSizes.paddingL),
               child: Row(
                 children: [
-                  Text('Pilih Resep', style: AppTextStyles.h2),
+                  Text('Choose Recipe', style: AppTextStyles.h2),
                   const Spacer(),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
@@ -87,7 +87,7 @@ class _RecipePickerDialogState extends State<RecipePickerDialog> {
                 },
                 decoration: const InputDecoration(
                   prefixIcon: Icon(Icons.search),
-                  hintText: 'Cari resep...',
+                  hintText: 'Find recipe...',
                 ),
               ),
             ),
@@ -95,7 +95,7 @@ class _RecipePickerDialogState extends State<RecipePickerDialog> {
               child: recipes.isEmpty
                   ? Center(
                 child: Text(
-                  'Resep tidak ditemukan.',
+                  'Recipe not found.',
                   style: AppTextStyles.bodySecondary,
                 ),
               )

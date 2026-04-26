@@ -15,31 +15,31 @@ class _MealPlanPageState extends State<MealPlanPage> {
   final List<Map<String, dynamic>> _templates = [
     {
       'id': 'template_001',
-      'name': 'Menu Sehat Minggu Ini',
-      'description': 'Kombinasi menu sehat dan bergizi untuk satu minggu',
+      'name': 'Healthy Weekly Menu',
+      'description': 'A combination of healthy and nutritious meals for a week',
       'status': 'published',
       'mealPlan': <String, Map<String, String?>>{},
     },
     {
       'id': 'template_002',
-      'name': 'Menu Nusantara Tradisional',
-      'description': 'Nikmati cita rasa nusantara sepanjang minggu',
+      'name': 'Traditional Indonesian Menu',
+      'description': 'Enjoy Indonesian flavors throughout the week',
       'status': 'published',
       'mealPlan': <String, Map<String, String?>>{},
     },
     {
       'id': 'template_003',
-      'name': 'Menu Western Favorit',
-      'description': 'Menu western yang mudah dibuat di rumah',
+      'name': 'Favorite Western Menu',
+      'description': 'Easy-to-make western dishes at home',
       'status': 'draft',
       'mealPlan': <String, Map<String, String?>>{},
     },
   ];
 
-  String _selectedStatus = 'Semua Status';
+  String _selectedStatus = 'All Status';
 
   List<Map<String, dynamic>> get _filteredTemplates {
-    if (_selectedStatus == 'Semua Status') {
+    if (_selectedStatus == 'All Status') {
       return _templates;
     }
 
@@ -99,8 +99,8 @@ class _MealPlanPageState extends State<MealPlanPage> {
                 isExpanded: true,
                 items: const [
                   DropdownMenuItem(
-                    value: 'Semua Status',
-                    child: Text('Semua Status'),
+                    value: 'All Status',
+                    child: Text('All Status'),
                   ),
                   DropdownMenuItem(
                     value: 'Published',
@@ -139,7 +139,7 @@ class _MealPlanPageState extends State<MealPlanPage> {
               Text('Template Meal Plan', style: AppTextStyles.h1),
               const SizedBox(height: AppSizes.spaceS),
               Text(
-                'Buat template rencana makan mingguan untuk pengguna',
+                'Create weekly meal plan templates for users',
                 style: AppTextStyles.bodySecondary,
               ),
             ],
@@ -150,7 +150,7 @@ class _MealPlanPageState extends State<MealPlanPage> {
           child: ElevatedButton.icon(
             onPressed: () => _openForm(),
             icon: const Icon(Icons.add),
-            label: const Text('Tambah Template'),
+            label: const Text('Add Template'),
           ),
         ),
       ],
@@ -196,12 +196,12 @@ class _MealPlanPageState extends State<MealPlanPage> {
           Text(
             (template['description'] as String?)?.isNotEmpty == true
                 ? template['description'] as String
-                : 'Tidak ada deskripsi',
+                : 'No description available',
             style: AppTextStyles.bodySecondary,
           ),
           const SizedBox(height: AppSizes.spaceM),
           Text(
-            '$mealCount slot resep terisi',
+            '$mealCount recipe slots filled',
             style: AppTextStyles.caption.copyWith(
               color: AppColors.primary,
               fontWeight: FontWeight.w600,

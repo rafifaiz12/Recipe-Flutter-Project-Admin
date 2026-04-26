@@ -22,19 +22,19 @@ class _MealPlanFormDialogState extends State<MealPlanFormDialog> {
   String _status = 'draft';
 
   final List<String> _days = const [
-    'Senin',
-    'Selasa',
-    'Rabu',
-    'Kamis',
-    'Jumat',
-    'Sabtu',
-    'Minggu',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
   ];
 
   final List<String> _mealTypes = const [
-    'Sarapan',
-    'Makan Siang',
-    'Makan Malam',
+    'Breakfast',
+    'Lunch',
+    'Dinner',
   ];
 
   final Map<String, Map<String, String?>> _mealPlan = {};
@@ -60,9 +60,9 @@ class _MealPlanFormDialogState extends State<MealPlanFormDialog> {
   void _initializeEmptyMealPlan() {
     for (final day in _days) {
       _mealPlan[day] = {
-        'Sarapan': null,
-        'Makan Siang': null,
-        'Makan Malam': null,
+        'Breakfast': null,
+        'Lunch': null,
+        'Dinner': null,
       };
     }
   }
@@ -164,14 +164,14 @@ class _MealPlanFormDialogState extends State<MealPlanFormDialog> {
                     _buildTopForm(),
                     const SizedBox(height: AppSizes.spaceL),
                     Text(
-                      'Rencana Makan Mingguan *',
+                      'Weekly Meal Plan *',
                       style: AppTextStyles.smallBold,
                     ),
                     const SizedBox(height: AppSizes.spaceS),
                     _buildMealPlanTable(),
                     const SizedBox(height: AppSizes.spaceS),
                     Text(
-                      'Klik "Pilih resep" untuk menambahkan resep ke slot waktu makan.',
+                      'Click "select recipe" to add a recipe to a meal slot.',
                       style: AppTextStyles.caption,
                     ),
                   ],
@@ -193,8 +193,8 @@ class _MealPlanFormDialogState extends State<MealPlanFormDialog> {
         children: [
           Text(
             widget.isEdit
-                ? 'Edit Template Meal Plan'
-                : 'Tambah Template Meal Plan',
+                ? 'Edit Meal Plan Template'
+                : 'Add Meal Plan Template',
             style: AppTextStyles.h2,
           ),
           const Spacer(),
@@ -216,12 +216,12 @@ class _MealPlanFormDialogState extends State<MealPlanFormDialog> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Nama Template *', style: AppTextStyles.smallBold),
+              Text('Template Name *', style: AppTextStyles.smallBold),
               const SizedBox(height: AppSizes.spaceS),
               TextField(
                 controller: _nameController,
                 decoration: const InputDecoration(
-                  hintText: 'Contoh: Menu Sehat Minggu Ini',
+                  hintText: 'Example : Healthy Menu This Week',
                 ),
               ),
             ],
@@ -285,10 +285,10 @@ class _MealPlanFormDialogState extends State<MealPlanFormDialog> {
               ),
               child: const Row(
                 children: [
-                  Expanded(flex: 1, child: Text('Hari')),
-                  Expanded(flex: 2, child: Text('Sarapan')),
-                  Expanded(flex: 2, child: Text('Makan Siang')),
-                  Expanded(flex: 2, child: Text('Makan Malam')),
+                  Expanded(flex: 1, child: Text('Day')),
+                  Expanded(flex: 2, child: Text('Breakfast')),
+                  Expanded(flex: 2, child: Text('Lunch')),
+                  Expanded(flex: 2, child: Text('Dinner')),
                 ],
               ),
             ),
@@ -347,12 +347,12 @@ class _MealPlanFormDialogState extends State<MealPlanFormDialog> {
         children: [
           OutlinedButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
+            child: const Text('Cancel'),
           ),
           const SizedBox(width: AppSizes.spaceM),
           ElevatedButton(
             onPressed: _submit,
-            child: Text(widget.isEdit ? 'Simpan Perubahan' : 'Tambah Template'),
+            child: Text(widget.isEdit ? 'Save Changes' : 'Add Template'),
           ),
         ],
       ),
@@ -396,7 +396,7 @@ class _MealSlotButton extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  _hasRecipe ? recipeName! : 'Pilih resep',
+                  _hasRecipe ? recipeName! : 'Choose Recipe',
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
