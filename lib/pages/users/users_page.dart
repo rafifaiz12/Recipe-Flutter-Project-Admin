@@ -16,21 +16,21 @@ class _UsersPageState extends State<UsersPage> {
   final TextEditingController _searchController = TextEditingController();
 
   String _query = '';
-  String _selectedStatus = 'all statuses';
+  String _selectedStatus = 'Semua Status';
 
   final List<Map<String, dynamic>> _users = [
     {
       'name': 'Ahmad Fauzi',
       'email': 'ahmad.fauzi@example.com',
       'registeredAt': '2026-01-15',
-      'status': 'Active',
+      'status': 'Aktif',
       'reviewCount': 12,
     },
     {
       'name': 'Siti Nurhaliza',
       'email': 'siti.nur@example.com',
       'registeredAt': '2026-02-20',
-      'status': 'Active',
+      'status': 'Aktif',
       'reviewCount': 8,
     },
     {
@@ -44,14 +44,14 @@ class _UsersPageState extends State<UsersPage> {
       'name': 'Dewi Lestari',
       'email': 'dewi.lestari@example.com',
       'registeredAt': '2026-03-25',
-      'status': 'Active',
+      'status': 'Aktif',
       'reviewCount': 15,
     },
     {
       'name': 'Eko Prasetyo',
       'email': 'eko.prasetyo@example.com',
       'registeredAt': '2026-04-01',
-      'status': 'Active',
+      'status': 'Aktif',
       'reviewCount': 5,
     },
   ];
@@ -67,7 +67,7 @@ class _UsersPageState extends State<UsersPage> {
           query.isEmpty || name.contains(query) || email.contains(query);
 
       final matchesStatus =
-          _selectedStatus == 'All statuses' || status == _selectedStatus;
+          _selectedStatus == 'Semua Status' || status == _selectedStatus;
 
       return matchesQuery && matchesStatus;
     }).toList();
@@ -94,7 +94,7 @@ class _UsersPageState extends State<UsersPage> {
 
   void _reactivateUser(Map<String, dynamic> user) {
     setState(() {
-      user['status'] = 'Active';
+      user['status'] = 'Aktif';
     });
   }
 
@@ -122,10 +122,10 @@ class _UsersPageState extends State<UsersPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('User Management', style: AppTextStyles.h1),
+            Text('Manajemen Pengguna', style: AppTextStyles.h1),
             const SizedBox(height: AppSizes.spaceS),
             Text(
-              'Manage application user accounts',
+              'Kelola akun pengguna aplikasi',
               style: AppTextStyles.bodySecondary,
             ),
             const SizedBox(height: AppSizes.spaceXL),
@@ -158,7 +158,7 @@ class _UsersPageState extends State<UsersPage> {
             },
             decoration: const InputDecoration(
               prefixIcon: Icon(Icons.search),
-              hintText: 'Search by name or email...',
+              hintText: 'Cari berdasarkan nama atau email...',
             ),
           ),
         ),
@@ -170,10 +170,10 @@ class _UsersPageState extends State<UsersPage> {
             isExpanded: true,
             items: const [
               DropdownMenuItem(
-                value: 'All Status',
-                child: Text('All Status'),
+                value: 'Semua Status',
+                child: Text('Semua Status'),
               ),
-              DropdownMenuItem(value: 'Active', child: Text('Active')),
+              DropdownMenuItem(value: 'Aktif', child: Text('Aktif')),
               DropdownMenuItem(value: 'Suspended', child: Text('Suspended')),
             ],
             onChanged: (value) {
@@ -190,17 +190,17 @@ class _UsersPageState extends State<UsersPage> {
     return Row(
       children: [
         Text(
-          'Showing $filteredCount from ${_users.length} users',
+          'Menampilkan $filteredCount dari ${_users.length} pengguna',
           style: AppTextStyles.bodySecondary,
         ),
         const Spacer(),
-        OutlinedButton(onPressed: () {}, child: const Text('Previously')),
+        OutlinedButton(onPressed: () {}, child: const Text('Sebelumnya')),
         const SizedBox(width: AppSizes.spaceS),
         ElevatedButton(onPressed: () {}, child: const Text('1')),
         const SizedBox(width: AppSizes.spaceS),
         OutlinedButton(onPressed: () {}, child: const Text('2')),
         const SizedBox(width: AppSizes.spaceS),
-        OutlinedButton(onPressed: () {}, child: const Text('Next')),
+        OutlinedButton(onPressed: () {}, child: const Text('Selanjutnya')),
       ],
     );
   }
@@ -241,12 +241,12 @@ class _UsersTable extends StatelessWidget {
               child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _TableText('Name', flex: 2, isHeader: true),
+                  _TableText('Nama', flex: 2, isHeader: true),
                   _TableText('Email', flex: 3, isHeader: true),
-                  _TableText('Registration Date', flex: 2, isHeader: true),
+                  _TableText('Tanggal Daftar', flex: 2, isHeader: true),
                   _TableText('Status', flex: 2, isHeader: true),
-                  _TableText('Number of Reviews', flex: 2, isHeader: true),
-                  _TableText('Action', flex: 3, isHeader: true),
+                  _TableText('Jumlah Review', flex: 2, isHeader: true),
+                  _TableText('Aksi', flex: 3, isHeader: true),
                 ],
               ),
             ),
@@ -254,7 +254,7 @@ class _UsersTable extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.all(AppSizes.paddingXL),
                 child: Text(
-                  'There are no suitable users.',
+                  'Tidak ada pengguna yang sesuai.',
                   style: AppTextStyles.bodySecondary,
                 ),
               )
@@ -320,7 +320,7 @@ class _UserRow extends StatelessWidget {
               children: [
                 if (_isSuspended)
                   _ActionButton(
-                    label: 'Reactivation',
+                    label: 'Reaktivasi',
                     icon: Icons.check_circle_outline,
                     backgroundColor: AppColors.success,
                     onTap: onReactivateTap,
@@ -334,7 +334,7 @@ class _UserRow extends StatelessWidget {
                   ),
                 const SizedBox(width: AppSizes.spaceS),
                 IconButton(
-                  tooltip: 'Delete account',
+                  tooltip: 'Hapus akun',
                   onPressed: onDeleteTap,
                   icon: const Icon(
                     Icons.delete_outline,
@@ -419,7 +419,7 @@ class _StatusBadge extends StatelessWidget {
 
   const _StatusBadge({required this.status});
 
-  bool get _isActive => status == 'Active';
+  bool get _isActive => status == 'Aktif';
 
   @override
   Widget build(BuildContext context) {

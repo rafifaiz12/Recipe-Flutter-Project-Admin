@@ -48,7 +48,7 @@ class _DeleteUserDialogState extends State<DeleteUserDialog> {
             children: [
               Row(
                 children: [
-                  Text('Delete User Account', style: AppTextStyles.h2),
+                  Text('Hapus Akun Pengguna', style: AppTextStyles.h2),
                   const Spacer(),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
@@ -68,11 +68,11 @@ class _DeleteUserDialogState extends State<DeleteUserDialog> {
                   ),
                 ),
                 child: Text(
-                  'Permanent Action\and Account Deletion will delete:\n'
-                  '• Firebase authentication data\n'
-                  '• All favorites, meal plans, and shopping lists\n'
-                  '• All reviews ($reviewCount review)\n'
-                  '• Recipe rating will be recalculated',
+                  'Tindakan Permanen\n\nPenghapusan akun akan menghapus:\n'
+                  '• Data autentikasi Firebase\n'
+                  '• Semua favorites, meal plans, dan shopping list\n'
+                  '• Semua review ($reviewCount review)\n'
+                  '• Rating resep akan dihitung ulang',
                   style: AppTextStyles.body.copyWith(
                     color: AppColors.error,
                     height: 1.6,
@@ -83,7 +83,7 @@ class _DeleteUserDialogState extends State<DeleteUserDialog> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Retype email to confirm *',
+                  'Ketik ulang email untuk konfirmasi *',
                   style: AppTextStyles.smallBold,
                 ),
               ),
@@ -103,7 +103,7 @@ class _DeleteUserDialogState extends State<DeleteUserDialog> {
                   border: Border.all(color: AppColors.border),
                 ),
                 child: Text(
-                  '⚠️ This action cannot be undone. Please make sure you are sure before proceeding.',
+                  '⚠️ Tindakan ini tidak dapat dibatalkan. Pastikan Anda yakin sebelum melanjutkan.',
                   style: AppTextStyles.bodySecondary,
                 ),
               ),
@@ -113,7 +113,7 @@ class _DeleteUserDialogState extends State<DeleteUserDialog> {
                 children: [
                   OutlinedButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
+                    child: const Text('Batal'),
                   ),
                   const SizedBox(width: AppSizes.spaceM),
                   ElevatedButton(
@@ -126,7 +126,7 @@ class _DeleteUserDialogState extends State<DeleteUserDialog> {
                       ),
                       disabledForegroundColor: Colors.white,
                     ),
-                    child: const Text('Permanent Delete'),
+                    child: const Text('Hapus Permanen'),
                   ),
                 ],
               ),
