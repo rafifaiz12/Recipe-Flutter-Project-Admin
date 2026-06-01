@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:siresep_admin/services/recipe_service.dart';
 import 'package:siresep_admin/core/constants/app_colors.dart';
 import 'package:siresep_admin/core/constants/app_sizes.dart';
 import 'package:siresep_admin/core/constants/app_text_styles.dart';
 import 'package:siresep_admin/pages/recipes/widgets/recipe_category_chip.dart';
 import 'package:siresep_admin/pages/recipes/widgets/recipe_form_dialog.dart';
 import 'package:siresep_admin/pages/recipes/widgets/recipe_status_badge.dart';
+import 'package:intl/intl.dart';
 
 class RecipesPage extends StatefulWidget {
   const RecipesPage({super.key});
@@ -15,6 +18,7 @@ class RecipesPage extends StatefulWidget {
 
 class _RecipesPageState extends State<RecipesPage> {
   final TextEditingController _searchController = TextEditingController();
+  final RecipeService _recipeService = RecipeService();
 
   String _searchQuery = '';
   String _selectedStatus = 'Semua Status';
@@ -60,19 +64,21 @@ class _RecipesPageState extends State<RecipesPage> {
     },
   ];
 
-  List<Map<String, dynamic>> get _filteredRecipes {
-    return _recipes.where((recipe) {
-      final title = (recipe['title'] as String).toLowerCase();
+  List<Map<String, dynamic>> _filterRecipes(
+    List<Map<String, dynamic>> recipes,
+  ) {
+    return recipes.where((recipe) {
+      final title = (recipe['title'] ?? '').toString().toLowerCase();
       final query = _searchQuery.toLowerCase();
-      final categories = List<String>.from(recipe['categories'] as List);
-      final status = recipe['status'] as String;
+      final categories = List<String>.from(recipe['categories'] as List? ?? []);
+      final status = (recipe['status'] ?? '').toString();
 
       final matchesSearch = query.isEmpty || title.contains(query);
       final matchesStatus =
           _selectedStatus == 'Semua Status' || status == _selectedStatus;
       final matchesCategory =
           _selectedCategory == 'Semua Kategori' ||
-              categories.contains(_selectedCategory);
+          categories.contains(_selectedCategory);
 
       return matchesSearch && matchesStatus && matchesCategory;
     }).toList();
@@ -85,64 +91,72 @@ class _RecipesPageState extends State<RecipesPage> {
   }
 
   Future<void> _openAddDialog() async {
-    final result = await showDialog<Map<String, dynamic>>(
+    await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (_) => const RecipeFormDialog(),
     );
-
-    if (result == null) return;
-
-    setState(() {
-      _recipes.add(result);
-    });
   }
 
   Future<void> _openEditDialog(Map<String, dynamic> recipe) async {
-    final recipeIndex = _recipes.indexOf(recipe);
-
-    final result = await showDialog<Map<String, dynamic>>(
+    await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (_) => RecipeFormDialog(recipe: recipe),
     );
-
-    if (result == null || recipeIndex == -1) return;
-
-    setState(() {
-      _recipes[recipeIndex] = result;
-    });
   }
 
-  void _deleteRecipe(Map<String, dynamic> recipe) {
-    setState(() {
-      _recipes.remove(recipe);
-    });
+  Future<void> _deleteRecipe(Map<String, dynamic> recipe) async {
+    final id = recipe['id']?.toString();
+
+    if (id == null || id.isEmpty) return;
+
+    await _recipeService.deleteRecipe(id);
   }
 
   @override
   Widget build(BuildContext context) {
-    final filteredRecipes = _filteredRecipes;
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: _recipeService.getRecipes(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Gagal memuat resep: ${snapshot.error}'));
+        }
 
-    return Align(
-      alignment: Alignment.topCenter,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSizes.paddingXL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            const SizedBox(height: AppSizes.spaceXL),
-            _buildFilters(),
-            const SizedBox(height: AppSizes.spaceXL),
-            _RecipeTable(
-              recipes: filteredRecipes,
-              onEditTap: _openEditDialog,
-              onDeleteTap: _deleteRecipe,
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final recipes =
+            snapshot.data?.docs.map((doc) {
+              final data = doc.data();
+              return {'id': doc.id, ...data};
+            }).toList() ??
+            [];
+
+        final filteredRecipes = _filterRecipes(recipes);
+
+        return Align(
+          alignment: Alignment.topCenter,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSizes.paddingXL),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(),
+                const SizedBox(height: AppSizes.spaceXL),
+                _buildFilters(),
+                const SizedBox(height: AppSizes.spaceXL),
+                _RecipeTable(
+                  recipes: filteredRecipes,
+                  onEditTap: _openEditDialog,
+                  onDeleteTap: _deleteRecipe,
+                ),
+                const SizedBox(height: AppSizes.spaceL),
+                _buildFooter(filteredRecipes.length, recipes.length),
+              ],
             ),
-            const SizedBox(height: AppSizes.spaceL),
-            _buildFooter(filteredRecipes.length),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -227,11 +241,11 @@ class _RecipesPageState extends State<RecipesPage> {
     );
   }
 
-  Widget _buildFooter(int filteredCount) {
+  Widget _buildFooter(int filteredCount, int totalCount) {
     return Row(
       children: [
         Text(
-          'Menampilkan $filteredCount dari ${_recipes.length} resep',
+          'Menampilkan $filteredCount dari $totalCount resep',
           style: AppTextStyles.bodySecondary,
         ),
         const Spacer(),
@@ -280,7 +294,7 @@ class _RecipeTable extends StatelessWidget {
               )
             else
               ...recipes.map(
-                    (recipe) => _RecipeTableRow(
+                (recipe) => _RecipeTableRow(
                   recipe: recipe,
                   onEditTap: () => onEditTap(recipe),
                   onDeleteTap: () => onDeleteTap(recipe),
@@ -319,6 +333,34 @@ class _RecipeTableHeader extends StatelessWidget {
   }
 }
 
+String _safeString(dynamic value, {String fallback = '-'}) {
+  if (value == null) return fallback;
+  final text = value.toString().trim();
+  return text.isEmpty ? fallback : text;
+}
+
+List<String> _safeStringList(dynamic value) {
+  if (value is List) {
+    return value.map((e) => e.toString()).toList();
+  }
+  return [];
+}
+
+String _formatDate(dynamic value) {
+  if (value == null) return '-';
+
+  if (value is Timestamp) {
+    return DateFormat('dd MMM yyyy').format(value.toDate());
+  }
+
+  if (value is DateTime) {
+    return DateFormat('dd MMM yyyy').format(value);
+  }
+
+  final text = value.toString().trim();
+  return text.isEmpty ? '-' : text;
+}
+
 class _RecipeTableRow extends StatelessWidget {
   final Map<String, dynamic> recipe;
   final VoidCallback onEditTap;
@@ -332,7 +374,7 @@ class _RecipeTableRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final categories = List<String>.from(recipe['categories'] as List);
+    final categories = _safeStringList(recipe['categories']);
 
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -345,7 +387,10 @@ class _RecipeTableRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _TableCellText(recipe['title'] as String, flex: 3),
+          _TableCellText(
+            _safeString(recipe['title'], fallback: 'Tanpa Judul'),
+            flex: 3,
+          ),
           Expanded(
             flex: 4,
             child: Wrap(
@@ -360,14 +405,18 @@ class _RecipeTableRow extends StatelessWidget {
             flex: 2,
             child: Align(
               alignment: Alignment.topLeft,
-              child: RecipeStatusBadge(status: recipe['status'] as String),
+              child: RecipeStatusBadge(
+                status: _safeString(recipe['status'], fallback: 'Draft'),
+              ),
             ),
           ),
           _TableCellText(
-            recipe['rating'] == '—' ? '—' : '⭐ ${recipe['rating']}',
+            _safeString(recipe['rating'], fallback: '—') == '—'
+                ? '—'
+                : '⭐ ${_safeString(recipe['rating'])}',
             flex: 2,
           ),
-          _TableCellText(recipe['createdAt'] as String, flex: 2),
+          _TableCellText(_formatDate(recipe['createdAt']), flex: 2),
           Expanded(
             flex: 2,
             child: Row(

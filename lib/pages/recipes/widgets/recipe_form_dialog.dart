@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:siresep_admin/core/constants/app_colors.dart';
 import 'package:siresep_admin/core/constants/app_sizes.dart';
 import 'package:siresep_admin/core/constants/app_text_styles.dart';
+import 'package:siresep_admin/services/recipe_service.dart';
 
 class RecipeFormDialog extends StatefulWidget {
   final Map<String, dynamic>? recipe;
@@ -17,6 +18,7 @@ class RecipeFormDialog extends StatefulWidget {
 class _RecipeFormDialogState extends State<RecipeFormDialog> {
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
+  late final TextEditingController _imageUrlController;
 
   final List<TextEditingController> _ingredientNameControllers = [];
   final List<TextEditingController> _ingredientQuantityControllers = [];
@@ -33,6 +35,9 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
 
   final List<String> _selectedCategories = [];
   String _status = 'Draft';
+  final RecipeService _recipeService = RecipeService();
+  bool _isSubmitting = false;
+  String _imageUrlPreview = '';
 
   @override
   void initState() {
@@ -46,6 +51,12 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
       text: widget.recipe?['description'] as String? ?? '',
     );
 
+    _imageUrlController = TextEditingController(
+      text: widget.recipe?['imageUrl']?.toString() ?? '',
+    );
+
+    _imageUrlPreview = _imageUrlController.text.trim();
+
     if (widget.recipe != null) {
       _status = widget.recipe?['status'] as String? ?? 'Draft';
 
@@ -53,10 +64,31 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
         List<String>.from(widget.recipe?['categories'] as List? ?? []),
       );
 
-      final ingredients = List<Map<String, dynamic>>.from(
-        widget.recipe?['ingredients'] ?? [],
-      );
-      final steps = List<String>.from(widget.recipe?['steps'] ?? []);
+      final rawIngredients = widget.recipe?['ingredients'];
+      final ingredients = <Map<String, dynamic>>[];
+
+      if (rawIngredients is List) {
+        for (final item in rawIngredients) {
+          if (item is Map) {
+            ingredients.add(Map<String, dynamic>.from(item));
+          } else {
+            ingredients.add({
+              'name': item.toString(),
+              'quantity': '',
+              'unit': '',
+            });
+          }
+        }
+      }
+
+      final rawSteps = widget.recipe?['steps'];
+      final steps = <String>[];
+
+      if (rawSteps is List) {
+        for (final item in rawSteps) {
+          steps.add(item.toString());
+        }
+      }
 
       if (ingredients.isEmpty) {
         _addIngredient();
@@ -87,6 +119,7 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _imageUrlController.dispose();
 
     for (final controller in _ingredientNameControllers) {
       controller.dispose();
@@ -155,7 +188,7 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
     });
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final title = _titleController.text.trim();
     final description = _descriptionController.text.trim();
 
@@ -163,35 +196,58 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
       return;
     }
 
-    final ingredients = <Map<String, dynamic>>[];
+    setState(() => _isSubmitting = true);
 
-    for (int index = 0; index < _ingredientNameControllers.length; index++) {
-      final name = _ingredientNameControllers[index].text.trim();
-      final quantity = _ingredientQuantityControllers[index].text.trim();
-      final unit = _ingredientUnitControllers[index].text.trim();
+    try {
+      final ingredients = <Map<String, dynamic>>[];
 
-      if (name.isEmpty) continue;
+      for (int index = 0; index < _ingredientNameControllers.length; index++) {
+        final name = _ingredientNameControllers[index].text.trim();
+        final quantity = _ingredientQuantityControllers[index].text.trim();
+        final unit = _ingredientUnitControllers[index].text.trim();
 
-      ingredients.add({'name': name, 'quantity': quantity, 'unit': unit});
+        if (name.isEmpty) continue;
+
+        ingredients.add({'name': name, 'quantity': quantity, 'unit': unit});
+      }
+
+      final steps = _stepControllers
+          .map((controller) => controller.text.trim())
+          .where((step) => step.isNotEmpty)
+          .toList();
+
+      final data = {
+        'title': title,
+        'description': description,
+        'categories': List<String>.from(_selectedCategories),
+        'ingredients': ingredients,
+        'steps': steps,
+        'status': _status,
+        'rating': widget.recipe?['rating'] ?? '—',
+        'imageUrl': _imageUrlController.text.trim(),
+      };
+
+      final recipeId = widget.recipe?['id']?.toString();
+
+      if (widget.isEdit && recipeId != null && recipeId.isNotEmpty) {
+        await _recipeService.updateRecipe(recipeId, data);
+      } else {
+        await _recipeService.addRecipe(data);
+      }
+
+      if (!mounted) return;
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal menyimpan resep: $e')));
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
-
-    final steps = _stepControllers
-        .map((controller) => controller.text.trim())
-        .where((step) => step.isNotEmpty)
-        .toList();
-
-    final result = {
-      'title': title,
-      'description': description,
-      'categories': List<String>.from(_selectedCategories),
-      'ingredients': ingredients,
-      'steps': steps,
-      'status': _status,
-      'rating': widget.recipe?['rating'] ?? '—',
-      'createdAt': widget.recipe?['createdAt'] ?? '2026-04-12',
-    };
-
-    Navigator.pop(context, result);
   }
 
   @override
@@ -268,8 +324,8 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
                 const SizedBox(height: AppSizes.spaceS),
                 Column(
                   children: List.generate(_ingredientNameControllers.length, (
-                      index,
-                      ) {
+                    index,
+                  ) {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: AppSizes.spaceS),
                       child: Row(
@@ -356,20 +412,45 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
                   label: const Text('Tambah Langkah'),
                 ),
                 const SizedBox(height: AppSizes.spaceL),
-                Text('Gambar Utama *', style: AppTextStyles.smallBold),
+                Text('URL Gambar Utama', style: AppTextStyles.smallBold),
                 const SizedBox(height: AppSizes.spaceS),
-                Container(
-                  height: 90,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: AppColors.inputBg,
-                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                    border: Border.all(color: AppColors.border),
+                TextField(
+                  controller: _imageUrlController,
+                  decoration: const InputDecoration(
+                    hintText: 'https://contoh.com/gambar-resep.jpg',
                   ),
-                  child: const Center(
-                    child: Text('Upload gambar (JPG/PNG, maks 5MB)'),
-                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _imageUrlPreview = value.trim();
+                    });
+                  },
                 ),
+                const SizedBox(height: AppSizes.spaceM),
+                if (_imageUrlPreview.isNotEmpty)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                    child: Image.network(
+                      _imageUrlPreview,
+                      height: 140,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 140,
+                          width: double.infinity,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: AppColors.inputBg,
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusM,
+                            ),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: const Text('Preview gambar gagal dimuat'),
+                        );
+                      },
+                    ),
+                  ),
                 const SizedBox(height: AppSizes.spaceL),
                 Text('Status', style: AppTextStyles.smallBold),
                 Row(
@@ -402,9 +483,13 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
                     ),
                     const SizedBox(width: AppSizes.spaceM),
                     ElevatedButton(
-                      onPressed: _submit,
+                      onPressed: _isSubmitting ? null : _submit,
                       child: Text(
-                        widget.isEdit ? 'Simpan Perubahan' : 'Tambah Resep',
+                        _isSubmitting
+                            ? 'Menyimpan...'
+                            : widget.isEdit
+                            ? 'Simpan Perubahan'
+                            : 'Tambah Resep',
                       ),
                     ),
                   ],
