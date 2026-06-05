@@ -28,7 +28,7 @@ class _MealPlanFormDialogState extends State<MealPlanFormDialog> {
     'Thursday',
     'Friday',
     'Saturday',
-    'Sunday',
+    'Sunday1',
   ];
 
   final List<String> _mealTypes = const [
