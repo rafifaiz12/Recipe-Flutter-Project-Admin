@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:siresep_admin/core/constants/app_colors.dart';
 import 'package:siresep_admin/core/constants/app_sizes.dart';
 import 'package:siresep_admin/core/constants/app_text_styles.dart';
-import 'package:siresep_admin/services/recipe_service.dart';
+import 'package:siresep_admin/models/recipe_model.dart';
+import 'package:siresep_admin/providers/recipe_provider.dart';
 
 class RecipeFormDialog extends StatefulWidget {
   final Map<String, dynamic>? recipe;
@@ -35,7 +37,6 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
 
   final List<String> _selectedCategories = [];
   String _status = 'Draft';
-  final RecipeService _recipeService = RecipeService();
   bool _isSubmitting = false;
   String _imageUrlPreview = '';
 
@@ -44,11 +45,11 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
     super.initState();
 
     _titleController = TextEditingController(
-      text: widget.recipe?['title'] as String? ?? '',
+      text: widget.recipe?['title']?.toString() ?? '',
     );
 
     _descriptionController = TextEditingController(
-      text: widget.recipe?['description'] as String? ?? '',
+      text: widget.recipe?['description']?.toString() ?? '',
     );
 
     _imageUrlController = TextEditingController(
@@ -58,7 +59,7 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
     _imageUrlPreview = _imageUrlController.text.trim();
 
     if (widget.recipe != null) {
-      _status = widget.recipe?['status'] as String? ?? 'Draft';
+      _status = widget.recipe?['status']?.toString() ?? 'Draft';
 
       _selectedCategories.addAll(
         List<String>.from(widget.recipe?['categories'] as List? ?? []),
@@ -193,13 +194,18 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
     final description = _descriptionController.text.trim();
 
     if (title.isEmpty || description.isEmpty || _selectedCategories.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Judul, deskripsi, dan kategori wajib diisi.'),
+        ),
+      );
       return;
     }
 
     setState(() => _isSubmitting = true);
 
     try {
-      final ingredients = <Map<String, dynamic>>[];
+      final ingredients = <RecipeIngredient>[];
 
       for (int index = 0; index < _ingredientNameControllers.length; index++) {
         final name = _ingredientNameControllers[index].text.trim();
@@ -208,7 +214,9 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
 
         if (name.isEmpty) continue;
 
-        ingredients.add({'name': name, 'quantity': quantity, 'unit': unit});
+        ingredients.add(
+          RecipeIngredient(name: name, quantity: quantity, unit: unit),
+        );
       }
 
       final steps = _stepControllers
@@ -216,23 +224,25 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
           .where((step) => step.isNotEmpty)
           .toList();
 
-      final data = {
-        'title': title,
-        'description': description,
-        'categories': List<String>.from(_selectedCategories),
-        'ingredients': ingredients,
-        'steps': steps,
-        'status': _status,
-        'rating': widget.recipe?['rating'] ?? '—',
-        'imageUrl': _imageUrlController.text.trim(),
-      };
+      final recipe = RecipeModel(
+        id: widget.recipe?['id']?.toString() ?? '',
+        title: title,
+        description: description,
+        categories: List<String>.from(_selectedCategories),
+        ingredients: ingredients,
+        steps: steps,
+        status: _status,
+        rating: widget.recipe?['rating']?.toString() ?? '—',
+        imageUrl: _imageUrlController.text.trim(),
+        createdAt: widget.recipe?['createdAt'],
+      );
 
-      final recipeId = widget.recipe?['id']?.toString();
+      final provider = context.read<RecipeProvider>();
 
-      if (widget.isEdit && recipeId != null && recipeId.isNotEmpty) {
-        await _recipeService.updateRecipe(recipeId, data);
+      if (widget.isEdit) {
+        await provider.updateRecipe(recipe);
       } else {
-        await _recipeService.addRecipe(data);
+        await provider.createRecipe(recipe);
       }
 
       if (!mounted) return;
@@ -478,7 +488,9 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: _isSubmitting
+                          ? null
+                          : () => Navigator.pop(context),
                       child: const Text('Batal'),
                     ),
                     const SizedBox(width: AppSizes.spaceM),

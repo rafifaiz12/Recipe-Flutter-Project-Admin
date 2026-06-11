@@ -1,88 +1,38 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:siresep_admin/services/recipe_service.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:siresep_admin/core/constants/app_colors.dart';
 import 'package:siresep_admin/core/constants/app_sizes.dart';
 import 'package:siresep_admin/core/constants/app_text_styles.dart';
+import 'package:siresep_admin/models/recipe_model.dart';
 import 'package:siresep_admin/pages/recipes/widgets/recipe_category_chip.dart';
 import 'package:siresep_admin/pages/recipes/widgets/recipe_form_dialog.dart';
 import 'package:siresep_admin/pages/recipes/widgets/recipe_status_badge.dart';
-import 'package:intl/intl.dart';
+import 'package:siresep_admin/providers/recipe_provider.dart';
 
-class RecipesPage extends StatefulWidget {
+class RecipesPage extends StatelessWidget {
   const RecipesPage({super.key});
 
   @override
-  State<RecipesPage> createState() => _RecipesPageState();
+  Widget build(BuildContext context) {
+    return const _RecipesView();
+  }
 }
 
-class _RecipesPageState extends State<RecipesPage> {
+class _RecipesView extends StatefulWidget {
+  const _RecipesView();
+
+  @override
+  State<_RecipesView> createState() => _RecipesViewState();
+}
+
+class _RecipesViewState extends State<_RecipesView> {
   final TextEditingController _searchController = TextEditingController();
-  final RecipeService _recipeService = RecipeService();
 
   String _searchQuery = '';
   String _selectedStatus = 'Semua Status';
   String _selectedCategory = 'Semua Kategori';
-
-  final List<Map<String, dynamic>> _recipes = [
-    {
-      'title': 'Nasi Goreng Spesial',
-      'description': 'Nasi goreng khas Indonesia dengan bumbu spesial.',
-      'categories': ['Makanan Utama', 'Nusantara'],
-      'ingredients': [
-        {'name': 'Nasi', 'quantity': '2', 'unit': 'porsi'},
-        {'name': 'Telur', 'quantity': '1', 'unit': 'butir'},
-      ],
-      'steps': ['Tumis bumbu.', 'Masukkan nasi dan aduk rata.'],
-      'status': 'Draft',
-      'rating': '4.5',
-      'createdAt': '2026-04-10',
-    },
-    {
-      'title': 'Rendang Daging Sapi',
-      'description': 'Rendang daging sapi dengan bumbu rempah.',
-      'categories': ['Makanan Utama', 'Nusantara'],
-      'ingredients': [
-        {'name': 'Daging sapi', 'quantity': '500', 'unit': 'g'},
-      ],
-      'steps': ['Masak daging bersama bumbu.', 'Masak hingga empuk.'],
-      'status': 'Published',
-      'rating': '4.8',
-      'createdAt': '2026-04-09',
-    },
-    {
-      'title': 'Rawon',
-      'description': 'Rawon khas Nusantara.',
-      'categories': ['Makanan Utama', 'Nusantara'],
-      'ingredients': [
-        {'name': 'Daging sapi', 'quantity': '300', 'unit': 'g'},
-      ],
-      'steps': ['Masak bumbu.', 'Masukkan daging.'],
-      'status': 'Published',
-      'rating': '—',
-      'createdAt': '2026-04-12',
-    },
-  ];
-
-  List<Map<String, dynamic>> _filterRecipes(
-    List<Map<String, dynamic>> recipes,
-  ) {
-    return recipes.where((recipe) {
-      final title = (recipe['title'] ?? '').toString().toLowerCase();
-      final query = _searchQuery.toLowerCase();
-      final categories = List<String>.from(recipe['categories'] as List? ?? []);
-      final status = (recipe['status'] ?? '').toString();
-
-      final matchesSearch = query.isEmpty || title.contains(query);
-      final matchesStatus =
-          _selectedStatus == 'Semua Status' || status == _selectedStatus;
-      final matchesCategory =
-          _selectedCategory == 'Semua Kategori' ||
-          categories.contains(_selectedCategory);
-
-      return matchesSearch && matchesStatus && matchesCategory;
-    }).toList();
-  }
 
   @override
   void dispose() {
@@ -91,72 +41,78 @@ class _RecipesPageState extends State<RecipesPage> {
   }
 
   Future<void> _openAddDialog() async {
+    final recipeProvider = context.read<RecipeProvider>();
+
     await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (_) => const RecipeFormDialog(),
+      builder: (_) => ChangeNotifierProvider.value(
+        value: recipeProvider,
+        child: const RecipeFormDialog(),
+      ),
     );
   }
 
-  Future<void> _openEditDialog(Map<String, dynamic> recipe) async {
+  Future<void> _openEditDialog(RecipeModel recipe) async {
+    final recipeProvider = context.read<RecipeProvider>();
+
     await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (_) => RecipeFormDialog(recipe: recipe),
+      builder: (_) => ChangeNotifierProvider.value(
+        value: recipeProvider,
+        child: RecipeFormDialog(recipe: {'id': recipe.id, ...recipe.toMap()}),
+      ),
     );
   }
 
-  Future<void> _deleteRecipe(Map<String, dynamic> recipe) async {
-    final id = recipe['id']?.toString();
+  Future<void> _deleteRecipe(RecipeModel recipe) async {
+    if (recipe.id.isEmpty) return;
 
-    if (id == null || id.isEmpty) return;
-
-    await _recipeService.deleteRecipe(id);
+    await context.read<RecipeProvider>().deleteRecipe(recipe.id);
   }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: _recipeService.getRecipes(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Center(child: Text('Gagal memuat resep: ${snapshot.error}'));
-        }
+    final provider = context.watch<RecipeProvider>();
 
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    if (provider.isLoading && provider.recipes.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-        final recipes =
-            snapshot.data?.docs.map((doc) {
-              final data = doc.data();
-              return {'id': doc.id, ...data};
-            }).toList() ??
-            [];
+    if (provider.errorMessage != null && provider.recipes.isEmpty) {
+      return Center(
+        child: Text('Gagal memuat resep: ${provider.errorMessage}'),
+      );
+    }
 
-        final filteredRecipes = _filterRecipes(recipes);
+    final recipes = provider.recipes;
 
-        return Align(
-          alignment: Alignment.topCenter,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSizes.paddingXL),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(),
-                const SizedBox(height: AppSizes.spaceXL),
-                _buildFilters(),
-                const SizedBox(height: AppSizes.spaceXL),
-                _RecipeTable(
-                  recipes: filteredRecipes,
-                  onEditTap: _openEditDialog,
-                  onDeleteTap: _deleteRecipe,
-                ),
-                const SizedBox(height: AppSizes.spaceL),
-                _buildFooter(filteredRecipes.length, recipes.length),
-              ],
+    final filteredRecipes = provider.filterRecipes(
+      searchQuery: _searchQuery,
+      selectedStatus: _selectedStatus,
+      selectedCategory: _selectedCategory,
+    );
+
+    return Align(
+      alignment: Alignment.topCenter,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppSizes.paddingXL),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(),
+            const SizedBox(height: AppSizes.spaceXL),
+            _buildFilters(),
+            const SizedBox(height: AppSizes.spaceXL),
+            _RecipeTable(
+              recipes: filteredRecipes,
+              onEditTap: _openEditDialog,
+              onDeleteTap: _deleteRecipe,
             ),
-          ),
-        );
-      },
+            const SizedBox(height: AppSizes.spaceL),
+            _buildFooter(filteredRecipes.length, recipes.length),
+          ],
+        ),
+      ),
     );
   }
 
@@ -260,9 +216,9 @@ class _RecipesPageState extends State<RecipesPage> {
 }
 
 class _RecipeTable extends StatelessWidget {
-  final List<Map<String, dynamic>> recipes;
-  final ValueChanged<Map<String, dynamic>> onEditTap;
-  final ValueChanged<Map<String, dynamic>> onDeleteTap;
+  final List<RecipeModel> recipes;
+  final ValueChanged<RecipeModel> onEditTap;
+  final ValueChanged<RecipeModel> onDeleteTap;
 
   const _RecipeTable({
     required this.recipes,
@@ -339,13 +295,6 @@ String _safeString(dynamic value, {String fallback = '-'}) {
   return text.isEmpty ? fallback : text;
 }
 
-List<String> _safeStringList(dynamic value) {
-  if (value is List) {
-    return value.map((e) => e.toString()).toList();
-  }
-  return [];
-}
-
 String _formatDate(dynamic value) {
   if (value == null) return '-';
 
@@ -362,7 +311,7 @@ String _formatDate(dynamic value) {
 }
 
 class _RecipeTableRow extends StatelessWidget {
-  final Map<String, dynamic> recipe;
+  final RecipeModel recipe;
   final VoidCallback onEditTap;
   final VoidCallback onDeleteTap;
 
@@ -374,8 +323,6 @@ class _RecipeTableRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final categories = _safeStringList(recipe['categories']);
-
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSizes.paddingL,
@@ -388,7 +335,7 @@ class _RecipeTableRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _TableCellText(
-            _safeString(recipe['title'], fallback: 'Tanpa Judul'),
+            _safeString(recipe.title, fallback: 'Tanpa Judul'),
             flex: 3,
           ),
           Expanded(
@@ -396,7 +343,7 @@ class _RecipeTableRow extends StatelessWidget {
             child: Wrap(
               spacing: AppSizes.spaceS,
               runSpacing: AppSizes.spaceS,
-              children: categories
+              children: recipe.categories
                   .map((category) => RecipeCategoryChip(label: category))
                   .toList(),
             ),
@@ -406,17 +353,15 @@ class _RecipeTableRow extends StatelessWidget {
             child: Align(
               alignment: Alignment.topLeft,
               child: RecipeStatusBadge(
-                status: _safeString(recipe['status'], fallback: 'Draft'),
+                status: _safeString(recipe.status, fallback: 'Draft'),
               ),
             ),
           ),
           _TableCellText(
-            _safeString(recipe['rating'], fallback: '—') == '—'
-                ? '—'
-                : '⭐ ${_safeString(recipe['rating'])}',
+            recipe.rating == '—' ? '—' : '⭐ ${recipe.rating}',
             flex: 2,
           ),
-          _TableCellText(_formatDate(recipe['createdAt']), flex: 2),
+          _TableCellText(_formatDate(recipe.createdAt), flex: 2),
           Expanded(
             flex: 2,
             child: Row(
