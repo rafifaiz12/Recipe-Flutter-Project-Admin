@@ -67,7 +67,28 @@ class _RecipesViewState extends State<_RecipesView> {
   Future<void> _deleteRecipe(RecipeModel recipe) async {
     if (recipe.id.isEmpty) return;
 
-    await context.read<RecipeProvider>().deleteRecipe(recipe.id);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => _DeleteRecipeDialog(recipe: recipe),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await context.read<RecipeProvider>().deleteRecipe(recipe.id);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Resep berhasil dihapus.')));
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal menghapus resep: $e')));
+    }
   }
 
   @override
@@ -439,6 +460,111 @@ class _FilterDropdown extends StatelessWidget {
       onChanged: (value) {
         if (value != null) onChanged(value);
       },
+    );
+  }
+}
+
+class _DeleteRecipeDialog extends StatelessWidget {
+  final RecipeModel recipe;
+
+  const _DeleteRecipeDialog({required this.recipe});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: AppColors.card,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+      ),
+      child: SizedBox(
+        width: 560,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSizes.paddingXL),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text('Hapus Resep', style: AppTextStyles.h2),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSizes.spaceL),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSizes.paddingL),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                  border: Border.all(
+                    color: AppColors.error.withValues(alpha: 0.35),
+                  ),
+                ),
+                child: Text(
+                  'Tindakan Permanen\n\n'
+                  'Penghapusan resep akan menghapus:\n'
+                  '• Data resep dari Firestore\n'
+                  '• Resep dari daftar aplikasi mobile\n'
+                  '• Data bahan dan langkah memasak\n'
+                  '• Gambar URL yang tersimpan pada resep',
+                  style: AppTextStyles.body.copyWith(
+                    color: AppColors.error,
+                    height: 1.6,
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSizes.spaceL),
+              Text(
+                'Apakah Anda yakin ingin menghapus resep ini?',
+                style: AppTextStyles.smallBold,
+              ),
+              const SizedBox(height: AppSizes.spaceS),
+              Text(
+                recipe.title,
+                style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: AppSizes.spaceL),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSizes.paddingM),
+                decoration: BoxDecoration(
+                  color: AppColors.inputBg,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Text(
+                  '⚠ Tindakan ini tidak dapat dibatalkan. Pastikan Anda yakin sebelum melanjutkan.',
+                  style: AppTextStyles.bodySecondary,
+                ),
+              ),
+              const SizedBox(height: AppSizes.spaceXL),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  OutlinedButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Batal'),
+                  ),
+                  const SizedBox(width: AppSizes.spaceM),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.error,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Hapus Permanen'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
