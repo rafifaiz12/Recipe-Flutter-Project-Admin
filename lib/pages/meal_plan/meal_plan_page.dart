@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import 'package:siresep_admin/core/constants/app_colors.dart';
 import 'package:siresep_admin/core/constants/app_sizes.dart';
 import 'package:siresep_admin/core/constants/app_text_styles.dart';
+import 'package:siresep_admin/models/meal_plan_model.dart';
+import 'package:siresep_admin/providers/meal_plan_provider.dart';
 import 'package:siresep_admin/pages/meal_plan/widgets/meal_plan_form_dialog.dart';
 
 class MealPlanPage extends StatefulWidget {
@@ -12,119 +16,151 @@ class MealPlanPage extends StatefulWidget {
 }
 
 class _MealPlanPageState extends State<MealPlanPage> {
-  final List<Map<String, dynamic>> _templates = [
-    {
-      'id': 'template_001',
-      'name': 'Healthy Weekly Menu',
-      'description': 'A combination of healthy and nutritious meals for a week',
-      'status': 'published',
-      'mealPlan': <String, Map<String, String?>>{},
-    },
-    {
-      'id': 'template_002',
-      'name': 'Traditional Indonesian Menu',
-      'description': 'Enjoy Indonesian flavors throughout the week',
-      'status': 'published',
-      'mealPlan': <String, Map<String, String?>>{},
-    },
-    {
-      'id': 'template_003',
-      'name': 'Favorite Western Menu',
-      'description': 'Easy-to-make western dishes at home',
-      'status': 'draft',
-      'mealPlan': <String, Map<String, String?>>{},
-    },
-  ];
-
   String _selectedStatus = 'All Status';
 
-  List<Map<String, dynamic>> get _filteredTemplates {
-    if (_selectedStatus == 'All Status') {
-      return _templates;
-    }
+  List<MealPlanTemplateModel> _filterTemplates(
+    List<MealPlanTemplateModel> templates,
+  ) {
+    if (_selectedStatus == 'All Status') return templates;
 
-    return _templates
-        .where(
-          (template) => template['status'] == _selectedStatus.toLowerCase(),
-    )
+    return templates
+        .where((template) => template.status == _selectedStatus.toLowerCase())
         .toList();
   }
 
-  Future<void> _openForm({Map<String, dynamic>? template}) async {
+  Future<void> _openForm({MealPlanTemplateModel? template}) async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (_) => MealPlanFormDialog(template: template),
+      builder: (_) => MealPlanFormDialog(
+        template: template == null
+            ? null
+            : {
+                'id': template.id,
+                'name': template.name,
+                'description': template.description,
+                'status': template.status,
+                'mealPlan': template.mealPlan,
+              },
+      ),
     );
 
-    if (result == null) return;
+    if (result == null || !mounted) return;
 
-    setState(() {
+    final provider = context.read<MealPlanTemplateProvider>();
+
+    final newTemplate = MealPlanTemplateModel(
+      id: template?.id ?? '',
+      name: result['name']?.toString() ?? '',
+      description: result['description']?.toString() ?? '',
+      status: result['status']?.toString() ?? 'draft',
+      mealPlan: _parseMealPlan(result['mealPlan']),
+    );
+
+    try {
       if (template == null) {
-        _templates.add({
-          'id': 'template_${DateTime.now().microsecondsSinceEpoch}',
-          ...result,
-        });
+        await provider.createTemplate(newTemplate);
       } else {
-        final index = _templates.indexOf(template);
-        if (index != -1) {
-          _templates[index] = {'id': template['id'], ...result};
-        }
+        await provider.updateTemplate(newTemplate);
       }
-    });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            template == null
+                ? 'Template meal plan berhasil ditambahkan.'
+                : 'Template meal plan berhasil diperbarui.',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal menyimpan template: $error')),
+      );
+    }
   }
 
-  void _deleteTemplate(Map<String, dynamic> template) {
-    setState(() {
-      _templates.remove(template);
-    });
+  Future<void> _deleteTemplate(MealPlanTemplateModel template) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Template?'),
+        content: Text(
+          'Template "${template.name}" akan dihapus dari Firestore.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    try {
+      await context.read<MealPlanTemplateProvider>().deleteTemplate(
+        template.id,
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Template meal plan berhasil dihapus.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal menghapus template: $error')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final templates = _filteredTemplates;
+    return Consumer<MealPlanTemplateProvider>(
+      builder: (context, provider, _) {
+        final templates = _filterTemplates(provider.templates);
 
-    return Align(
-      alignment: Alignment.topCenter,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSizes.paddingXL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            const SizedBox(height: AppSizes.spaceL),
-            SizedBox(
-              width: 180,
-              child: DropdownButtonFormField<String>(
-                value: _selectedStatus,
-                isExpanded: true,
-                items: const [
-                  DropdownMenuItem(
-                    value: 'All Status',
-                    child: Text('All Status'),
+        return Align(
+          alignment: Alignment.topCenter,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSizes.paddingXL),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(),
+                const SizedBox(height: AppSizes.spaceL),
+                _buildStatusFilter(),
+                const SizedBox(height: AppSizes.spaceXL),
+                if (provider.isLoading)
+                  const Center(child: CircularProgressIndicator())
+                else if (provider.errorMessage != null)
+                  Text(
+                    'Gagal memuat template: ${provider.errorMessage}',
+                    style: AppTextStyles.body.copyWith(color: AppColors.error),
+                  )
+                else if (templates.isEmpty)
+                  Text(
+                    'Belum ada template meal plan.',
+                    style: AppTextStyles.bodySecondary,
+                  )
+                else
+                  Wrap(
+                    spacing: AppSizes.spaceL,
+                    runSpacing: AppSizes.spaceL,
+                    children: templates.map(_buildTemplateCard).toList(),
                   ),
-                  DropdownMenuItem(
-                    value: 'Published',
-                    child: Text('Published'),
-                  ),
-                  DropdownMenuItem(value: 'Draft', child: Text('Draft')),
-                ],
-                onChanged: (value) {
-                  if (value == null) return;
-                  setState(() {
-                    _selectedStatus = value;
-                  });
-                },
-              ),
+              ],
             ),
-            const SizedBox(height: AppSizes.spaceXL),
-            Wrap(
-              spacing: AppSizes.spaceL,
-              runSpacing: AppSizes.spaceL,
-              children: templates.map(_buildTemplateCard).toList(),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -157,8 +193,29 @@ class _MealPlanPageState extends State<MealPlanPage> {
     );
   }
 
-  Widget _buildTemplateCard(Map<String, dynamic> template) {
-    final bool isPublished = template['status'] == 'published';
+  Widget _buildStatusFilter() {
+    return SizedBox(
+      width: 180,
+      child: DropdownButtonFormField<String>(
+        value: _selectedStatus,
+        isExpanded: true,
+        items: const [
+          DropdownMenuItem(value: 'All Status', child: Text('All Status')),
+          DropdownMenuItem(value: 'Published', child: Text('Published')),
+          DropdownMenuItem(value: 'Draft', child: Text('Draft')),
+        ],
+        onChanged: (value) {
+          if (value == null) return;
+          setState(() {
+            _selectedStatus = value;
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildTemplateCard(MealPlanTemplateModel template) {
+    final bool isPublished = template.status == 'published';
     final mealCount = _countSelectedMeals(template);
 
     return Container(
@@ -188,14 +245,11 @@ class _MealPlanPageState extends State<MealPlanPage> {
             ],
           ),
           const SizedBox(height: AppSizes.spaceL),
-          Text(
-            template['name'] as String,
-            style: AppTextStyles.h2.copyWith(fontSize: 18),
-          ),
+          Text(template.name, style: AppTextStyles.h2.copyWith(fontSize: 18)),
           const SizedBox(height: AppSizes.spaceS),
           Text(
-            (template['description'] as String?)?.isNotEmpty == true
-                ? template['description'] as String
+            template.description.isNotEmpty
+                ? template.description
                 : 'No description available',
             style: AppTextStyles.bodySecondary,
           ),
@@ -227,24 +281,41 @@ class _MealPlanPageState extends State<MealPlanPage> {
     );
   }
 
-  int _countSelectedMeals(Map<String, dynamic> template) {
-    final rawMealPlan = template['mealPlan'];
-
-    if (rawMealPlan is! Map) return 0;
-
+  int _countSelectedMeals(MealPlanTemplateModel template) {
     int count = 0;
 
-    for (final dayMeals in rawMealPlan.values) {
-      if (dayMeals is Map) {
-        for (final recipeName in dayMeals.values) {
-          if (recipeName != null && recipeName.toString().trim().isNotEmpty) {
-            count++;
-          }
+    for (final dayMeals in template.mealPlan.values) {
+      for (final recipeId in dayMeals.values) {
+        if (recipeId != null && recipeId.trim().isNotEmpty) {
+          count++;
         }
       }
     }
 
     return count;
+  }
+
+  Map<String, Map<String, String?>> _parseMealPlan(dynamic value) {
+    final result = <String, Map<String, String?>>{};
+
+    if (value is! Map) return result;
+
+    for (final dayEntry in value.entries) {
+      final day = dayEntry.key.toString();
+      final meals = <String, String?>{};
+
+      if (dayEntry.value is Map) {
+        final rawMeals = dayEntry.value as Map;
+
+        for (final mealEntry in rawMeals.entries) {
+          meals[mealEntry.key.toString()] = mealEntry.value?.toString();
+        }
+      }
+
+      result[day] = meals;
+    }
+
+    return result;
   }
 }
 

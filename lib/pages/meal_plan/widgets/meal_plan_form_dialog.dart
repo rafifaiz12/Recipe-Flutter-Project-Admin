@@ -3,6 +3,9 @@ import 'package:siresep_admin/core/constants/app_colors.dart';
 import 'package:siresep_admin/core/constants/app_sizes.dart';
 import 'package:siresep_admin/core/constants/app_text_styles.dart';
 import 'package:siresep_admin/pages/meal_plan/widgets/recipe_picker_dialog.dart';
+import 'package:provider/provider.dart';
+import 'package:siresep_admin/models/recipe_model.dart';
+import 'package:siresep_admin/providers/recipe_provider.dart';
 
 class MealPlanFormDialog extends StatefulWidget {
   final Map<String, dynamic>? template;
@@ -28,14 +31,10 @@ class _MealPlanFormDialogState extends State<MealPlanFormDialog> {
     'Thursday',
     'Friday',
     'Saturday',
-    'Sunday1',
+    'Sunday',
   ];
 
-  final List<String> _mealTypes = const [
-    'Breakfast',
-    'Lunch',
-    'Dinner',
-  ];
+  final List<String> _mealTypes = const ['Breakfast', 'Lunch', 'Dinner'];
 
   final Map<String, Map<String, String?>> _mealPlan = {};
 
@@ -59,11 +58,7 @@ class _MealPlanFormDialogState extends State<MealPlanFormDialog> {
 
   void _initializeEmptyMealPlan() {
     for (final day in _days) {
-      _mealPlan[day] = {
-        'Breakfast': null,
-        'Lunch': null,
-        'Dinner': null,
-      };
+      _mealPlan[day] = {'Breakfast': null, 'Lunch': null, 'Dinner': null};
     }
   }
 
@@ -98,7 +93,7 @@ class _MealPlanFormDialogState extends State<MealPlanFormDialog> {
     required String day,
     required String mealType,
   }) async {
-    final selectedRecipe = await showDialog<String>(
+    final selectedRecipe = await showDialog<RecipeModel>(
       context: context,
       builder: (_) => const RecipePickerDialog(),
     );
@@ -106,7 +101,7 @@ class _MealPlanFormDialogState extends State<MealPlanFormDialog> {
     if (selectedRecipe == null) return;
 
     setState(() {
-      _mealPlan[day]![mealType] = selectedRecipe;
+      _mealPlan[day]![mealType] = selectedRecipe.id;
     });
   }
 
@@ -163,10 +158,7 @@ class _MealPlanFormDialogState extends State<MealPlanFormDialog> {
                   children: [
                     _buildTopForm(),
                     const SizedBox(height: AppSizes.spaceL),
-                    Text(
-                      'Weekly Meal Plan *',
-                      style: AppTextStyles.smallBold,
-                    ),
+                    Text('Weekly Meal Plan *', style: AppTextStyles.smallBold),
                     const SizedBox(height: AppSizes.spaceS),
                     _buildMealPlanTable(),
                     const SizedBox(height: AppSizes.spaceS),
@@ -268,6 +260,10 @@ class _MealPlanFormDialogState extends State<MealPlanFormDialog> {
   }
 
   Widget _buildMealPlanTable() {
+    final recipes = context.watch<RecipeProvider>().recipes;
+    final recipeTitleById = {
+      for (final recipe in recipes) recipe.id: recipe.title,
+    };
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: AppColors.border),
@@ -320,7 +316,9 @@ class _MealPlanFormDialogState extends State<MealPlanFormDialog> {
                             horizontal: AppSizes.paddingXS,
                           ),
                           child: _MealSlotButton(
-                            recipeName: _mealPlan[day]![mealType],
+                            recipeName:
+                                recipeTitleById[_mealPlan[day]![mealType]] ??
+                                _mealPlan[day]![mealType],
                             onTap: () =>
                                 _pickRecipe(day: day, mealType: mealType),
                             onClearTap: () =>
