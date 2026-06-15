@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'package:siresep_admin/app/admin_app.dart';
 import 'package:siresep_admin/providers/meal_plan_provider.dart';
+import 'package:siresep_admin/providers/review_provider.dart';
 import 'package:siresep_admin/providers/recipe_provider.dart';
 import 'firebase_options.dart';
 
@@ -20,6 +21,7 @@ void main() async {
         ChangeNotifierProvider(
           create: (_) => RecipeProvider()..listenRecipes(),
         ),
+        ChangeNotifierProvider(create: (_) => ReviewProvider()),
       ],
       child: const AdminApp(),
     ),

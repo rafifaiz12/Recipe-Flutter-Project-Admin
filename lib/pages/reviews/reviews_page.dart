@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:siresep_admin/core/constants/app_colors.dart';
 import 'package:siresep_admin/core/constants/app_sizes.dart';
 import 'package:siresep_admin/core/constants/app_text_styles.dart';
+import 'package:provider/provider.dart';
+import 'package:siresep_admin/models/review_model.dart';
+import 'package:siresep_admin/providers/review_provider.dart';
 
 class ReviewsPage extends StatefulWidget {
   const ReviewsPage({super.key});
@@ -12,89 +15,52 @@ class ReviewsPage extends StatefulWidget {
 
 class _ReviewsPageState extends State<ReviewsPage> {
   String _selectedRating = 'Semua Rating';
-  String _selectedStatus = 'Semua Status';
-  String _selectedRecipe = 'Semua Resep';
+  String _commentKeyword = '';
+  String _selectedRecipe = '';
 
   DateTime? _startDate;
   DateTime? _endDate;
 
-  final List<Map<String, dynamic>> _reviews = [
-    {
-      'userName': 'Ahmad Fauzi',
-      'recipeName': 'Nasi Goreng Spesial',
-      'rating': 5,
-      'comment': 'Enak banget! Resepnya mudah diikuti dan hasilnya memuaskan.',
-      'date': DateTime(2026, 4, 11),
-      'status': 'Aktif',
-    },
-    {
-      'userName': 'Siti Nurhaliza',
-      'recipeName': 'Rendang Daging Sapi',
-      'rating': 4,
-      'comment': 'Lumayan enak, tapi agak terlalu pedas untuk saya.',
-      'date': DateTime(2026, 4, 10),
-      'status': 'Aktif',
-    },
-    {
-      'userName': 'Budi Santoso',
-      'recipeName': 'Spaghetti Carbonara',
-      'rating': 1,
-      'comment': 'Resep sampah! Tidak jelas sama sekali.',
-      'date': DateTime(2026, 4, 9),
-      'status': 'Aktif',
-    },
-    {
-      'userName': 'Dewi Lestari',
-      'recipeName': 'Soto Ayam',
-      'rating': 5,
-      'comment': 'Perfect! Keluarga saya sangat suka. Terima kasih resepnya.',
-      'date': DateTime(2026, 4, 8),
-      'status': 'Aktif',
-    },
-    {
-      'userName': 'Eko Prasetyo',
-      'recipeName': 'Gado-Gado',
-      'rating': 3,
-      'comment': 'Biasa saja, tidak ada yang spesial.',
-      'date': DateTime(2026, 4, 7),
-      'status': 'Dihapus',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
 
-  List<String> get _recipeOptions {
-    final recipes = _reviews
-        .map((review) => review['recipeName'] as String)
-        .toSet()
-        .toList();
-
-    return ['Semua Resep', ...recipes];
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ReviewProvider>().fetchReviews();
+    });
   }
 
-  List<Map<String, dynamic>> get _filteredReviews {
-    return _reviews.where((review) {
-      final rating = review['rating'] as int;
-      final status = review['status'] as String;
-      final recipeName = review['recipeName'] as String;
-      final date = review['date'] as DateTime;
-
+  List<ReviewModel> _filteredReviews(List<ReviewModel> reviews) {
+    return reviews.where((review) {
       final matchesRating =
           _selectedRating == 'Semua Rating' ||
-          rating == int.parse(_selectedRating.split(' ').first);
+          review.rating == int.parse(_selectedRating.split(' ').first);
 
-      final matchesStatus =
-          _selectedStatus == 'Semua Status' || status == _selectedStatus;
+      final matchesComment =
+          _commentKeyword.isEmpty ||
+          review.comment.toLowerCase().contains(_commentKeyword.toLowerCase());
 
       final matchesRecipe =
-          _selectedRecipe == 'Semua Resep' || recipeName == _selectedRecipe;
+          _selectedRecipe.isEmpty ||
+          review.recipeName.toLowerCase().contains(
+            _selectedRecipe.toLowerCase(),
+          );
+
+      final reviewDate = review.createdAt?.toDate();
 
       final matchesStartDate =
-          _startDate == null || !date.isBefore(_startDate!);
+          _startDate == null ||
+          reviewDate == null ||
+          !reviewDate.isBefore(_startDate!);
 
-      final matchesEndDate = _endDate == null || !date.isAfter(_endDate!);
+      final matchesEndDate =
+          _endDate == null ||
+          reviewDate == null ||
+          !reviewDate.isAfter(_endDate!);
 
       return matchesRating &&
-          matchesStatus &&
           matchesRecipe &&
+          matchesComment &&
           matchesStartDate &&
           matchesEndDate;
     }).toList();
@@ -148,10 +114,55 @@ class _ReviewsPageState extends State<ReviewsPage> {
     });
   }
 
-  void _deleteReview(Map<String, dynamic> review) {
-    setState(() {
-      review['status'] = 'Dihapus';
-    });
+  Future<void> _deleteReview(ReviewModel review) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Hapus Review'),
+          content: Text(
+            'Apakah Anda yakin ingin menghapus review dari "${review.userName}"?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, false);
+              },
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context, true);
+              },
+              child: const Text('Hapus'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    try {
+      await context.read<ReviewProvider>().deleteReview(
+        recipeId: review.recipeId,
+        reviewId: review.id,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Review berhasil dihapus')));
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal menghapus review: $e')));
+    }
   }
 
   String _formatDate(DateTime date) {
@@ -172,59 +183,57 @@ class _ReviewsPageState extends State<ReviewsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final reviews = _filteredReviews;
+    return Consumer<ReviewProvider>(
+      builder: (context, provider, child) {
+        if (provider.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    return Align(
-      alignment: Alignment.topCenter,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSizes.paddingXL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Moderasi Review', style: AppTextStyles.h1),
-            const SizedBox(height: AppSizes.spaceS),
-            Text(
-              'Pantau dan kelola review dari pengguna',
-              style: AppTextStyles.bodySecondary,
-            ),
-            const SizedBox(height: AppSizes.spaceXL),
-            _buildFilters(),
-            const SizedBox(height: AppSizes.spaceXL),
-            _ReviewsTable(
-              reviews: reviews,
-              formatDate: _formatDate,
-              onDeleteTap: _deleteReview,
-            ),
-            const SizedBox(height: AppSizes.spaceL),
-            Row(
+        if (provider.errorMessage != null) {
+          return Center(child: Text(provider.errorMessage!));
+        }
+
+        final reviews = _filteredReviews(provider.reviews);
+
+        return Align(
+          alignment: Alignment.topCenter,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSizes.paddingXL),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text('Moderasi Review', style: AppTextStyles.h1),
+                const SizedBox(height: AppSizes.spaceS),
                 Text(
-                  'Menampilkan ${reviews.length} dari ${_reviews.length} review',
+                  'Pantau dan kelola review dari pengguna',
                   style: AppTextStyles.bodySecondary,
                 ),
-                const Spacer(),
-                OutlinedButton(
-                  onPressed: () {},
-                  child: const Text('Sebelumnya'),
+                const SizedBox(height: AppSizes.spaceXL),
+                _buildFilters(provider.reviews),
+                const SizedBox(height: AppSizes.spaceXL),
+                _ReviewsTable(
+                  reviews: reviews,
+                  formatDate: _formatDate,
+                  onDeleteTap: _deleteReview,
                 ),
-                const SizedBox(width: AppSizes.spaceS),
-                ElevatedButton(onPressed: () {}, child: const Text('1')),
-                const SizedBox(width: AppSizes.spaceS),
-                OutlinedButton(onPressed: () {}, child: const Text('2')),
-                const SizedBox(width: AppSizes.spaceS),
-                OutlinedButton(
-                  onPressed: () {},
-                  child: const Text('Selanjutnya'),
+                const SizedBox(height: AppSizes.spaceL),
+                Row(
+                  children: [
+                    Text(
+                      'Menampilkan ${reviews.length} dari ${provider.reviews.length} review',
+                      style: AppTextStyles.bodySecondary,
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildFilters() {
+  Widget _buildFilters(List<ReviewModel> reviews) {
     return Column(
       children: [
         Row(
@@ -241,33 +250,49 @@ class _ReviewsPageState extends State<ReviewsPage> {
                   '1 Bintang',
                 ],
                 onChanged: (value) {
-                  setState(() => _selectedRating = value);
+                  setState(() {
+                    _selectedRating = value;
+                  });
                 },
               ),
             ),
+
             const SizedBox(width: AppSizes.spaceM),
+
             Expanded(
-              child: _FilterDropdown(
-                value: _selectedStatus,
-                items: const ['Semua Status', 'Aktif', 'Dihapus'],
+              child: TextFormField(
+                decoration: const InputDecoration(
+                  hintText: 'Cari komentar...',
+                  prefixIcon: Icon(Icons.search),
+                ),
                 onChanged: (value) {
-                  setState(() => _selectedStatus = value);
+                  setState(() {
+                    _commentKeyword = value;
+                  });
                 },
               ),
             ),
+
             const SizedBox(width: AppSizes.spaceM),
+
             Expanded(
-              child: _FilterDropdown(
-                value: _selectedRecipe,
-                items: _recipeOptions,
+              child: TextFormField(
+                decoration: const InputDecoration(
+                  hintText: 'Cari resep...',
+                  prefixIcon: Icon(Icons.search),
+                ),
                 onChanged: (value) {
-                  setState(() => _selectedRecipe = value);
+                  setState(() {
+                    _selectedRecipe = value;
+                  });
                 },
               ),
             ),
           ],
         ),
+
         const SizedBox(height: AppSizes.spaceM),
+
         Row(
           children: [
             Expanded(
@@ -276,14 +301,18 @@ class _ReviewsPageState extends State<ReviewsPage> {
                 onTap: () => _pickDate(isStartDate: true),
               ),
             ),
+
             const SizedBox(width: AppSizes.spaceM),
+
             Expanded(
               child: _DateInput(
                 label: _formatInputDate(_endDate),
                 onTap: () => _pickDate(isStartDate: false),
               ),
             ),
+
             const SizedBox(width: AppSizes.spaceM),
+
             OutlinedButton.icon(
               onPressed: _clearDateFilter,
               icon: const Icon(Icons.close),
@@ -297,9 +326,9 @@ class _ReviewsPageState extends State<ReviewsPage> {
 }
 
 class _ReviewsTable extends StatelessWidget {
-  final List<Map<String, dynamic>> reviews;
+  final List<ReviewModel> reviews;
   final String Function(DateTime date) formatDate;
-  final ValueChanged<Map<String, dynamic>> onDeleteTap;
+  final Future<void> Function(ReviewModel review) onDeleteTap;
 
   const _ReviewsTable({
     required this.reviews,
@@ -334,7 +363,6 @@ class _ReviewsTable extends StatelessWidget {
                   _TableText('Rating', flex: 2, isHeader: true),
                   _TableText('Komentar', flex: 5, isHeader: true),
                   _TableText('Tanggal', flex: 2, isHeader: true),
-                  _TableText('Status', flex: 2, isHeader: true),
                   _TableText('Aksi', flex: 1, isHeader: true),
                 ],
               ),
@@ -352,7 +380,9 @@ class _ReviewsTable extends StatelessWidget {
                 (review) => _ReviewRow(
                   review: review,
                   formatDate: formatDate,
-                  onDeleteTap: () => onDeleteTap(review),
+                  onDeleteTap: () async {
+                    await onDeleteTap(review);
+                  },
                 ),
               ),
           ],
@@ -363,7 +393,7 @@ class _ReviewsTable extends StatelessWidget {
 }
 
 class _ReviewRow extends StatelessWidget {
-  final Map<String, dynamic> review;
+  final ReviewModel review;
   final String Function(DateTime date) formatDate;
   final VoidCallback onDeleteTap;
 
@@ -375,7 +405,7 @@ class _ReviewRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = review['status'] as String;
+    final reviewDate = review.createdAt?.toDate() ?? DateTime.now();
 
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -388,32 +418,17 @@ class _ReviewRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _TableText(review['userName'] as String, flex: 2),
-          _TableText(review['recipeName'] as String, flex: 3),
-          Expanded(
-            flex: 2,
-            child: _RatingStars(rating: review['rating'] as int),
-          ),
-          _TableText(review['comment'] as String, flex: 5, maxLines: 2),
-          _TableText(formatDate(review['date'] as DateTime), flex: 2),
-          Expanded(
-            flex: 2,
-            child: Align(
-              alignment: Alignment.topLeft,
-              child: _StatusBadge(status: status),
-            ),
-          ),
+          _TableText(review.userName, flex: 2),
+          _TableText(review.recipeName, flex: 3),
+          Expanded(flex: 2, child: _RatingStars(rating: review.rating)),
+          _TableText(review.comment, flex: 5, maxLines: 2),
+          _TableText(formatDate(reviewDate), flex: 2),
           Expanded(
             flex: 1,
             child: IconButton(
               tooltip: 'Hapus review',
-              onPressed: status == 'Dihapus' ? null : onDeleteTap,
-              icon: Icon(
-                Icons.delete_outline,
-                color: status == 'Dihapus'
-                    ? AppColors.textSecondary
-                    : AppColors.error,
-              ),
+              onPressed: onDeleteTap,
+              icon: const Icon(Icons.delete_outline, color: AppColors.error),
             ),
           ),
         ],
@@ -439,37 +454,6 @@ class _RatingStars extends StatelessWidget {
           color: isFilled ? AppColors.warning : AppColors.textSecondary,
         );
       }),
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  final String status;
-
-  const _StatusBadge({required this.status});
-
-  bool get _isActive => status == 'Aktif';
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.paddingS,
-        vertical: AppSizes.paddingXS,
-      ),
-      decoration: BoxDecoration(
-        color: _isActive
-            ? AppColors.success.withValues(alpha: 0.15)
-            : AppColors.error.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(AppSizes.radiusS),
-      ),
-      child: Text(
-        status,
-        style: AppTextStyles.caption.copyWith(
-          color: _isActive ? AppColors.success : AppColors.error,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
     );
   }
 }
