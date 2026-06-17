@@ -379,7 +379,9 @@ class _RecipeTableRow extends StatelessWidget {
             ),
           ),
           _TableCellText(
-            recipe.rating == '—' ? '—' : '⭐ ${recipe.rating}',
+            recipe.reviewCount > 0
+                ? '⭐ ${recipe.ratingAverage.toStringAsFixed(1)}'
+                : '—',
             flex: 2,
           ),
           _TableCellText(_formatDate(recipe.createdAt), flex: 2),

@@ -21,6 +21,7 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _imageUrlController;
+  late final TextEditingController _cookTimeController;
 
   final List<TextEditingController> _ingredientNameControllers = [];
   final List<TextEditingController> _ingredientQuantityControllers = [];
@@ -37,6 +38,7 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
 
   final List<String> _selectedCategories = [];
   String _status = 'Draft';
+  String _difficulty = 'Easy';
   bool _isSubmitting = false;
   String _imageUrlPreview = '';
 
@@ -56,10 +58,15 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
       text: widget.recipe?['imageUrl']?.toString() ?? '',
     );
 
+    _cookTimeController = TextEditingController(
+      text: widget.recipe?['cookTimeMinutes']?.toString() ?? '',
+    );
+
     _imageUrlPreview = _imageUrlController.text.trim();
 
     if (widget.recipe != null) {
       _status = widget.recipe?['status']?.toString() ?? 'Draft';
+      _difficulty = widget.recipe?['difficulty']?.toString() ?? 'Easy';
 
       _selectedCategories.addAll(
         List<String>.from(widget.recipe?['categories'] as List? ?? []),
@@ -121,6 +128,7 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
     _titleController.dispose();
     _descriptionController.dispose();
     _imageUrlController.dispose();
+    _cookTimeController.dispose();
 
     for (final controller in _ingredientNameControllers) {
       controller.dispose();
@@ -232,7 +240,16 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
         ingredients: ingredients,
         steps: steps,
         status: _status,
-        rating: widget.recipe?['rating']?.toString() ?? '—',
+
+        cookTimeMinutes: int.tryParse(_cookTimeController.text.trim()) ?? 0,
+
+        difficulty: _difficulty,
+
+        ratingAverage:
+            (widget.recipe?['ratingAverage'] as num?)?.toDouble() ?? 0.0,
+
+        reviewCount: (widget.recipe?['reviewCount'] as num?)?.toInt() ?? 0,
+
         imageUrl: _imageUrlController.text.trim(),
         createdAt: widget.recipe?['createdAt'],
       );
@@ -421,6 +438,37 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
                   icon: const Icon(Icons.add),
                   label: const Text('Tambah Langkah'),
                 ),
+
+                const SizedBox(height: AppSizes.spaceL),
+                Text('Durasi Memasak (menit)', style: AppTextStyles.smallBold),
+                const SizedBox(height: AppSizes.spaceS),
+
+                TextField(
+                  controller: _cookTimeController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(hintText: 'Contoh: 30'),
+                ),
+
+                const SizedBox(height: AppSizes.spaceL),
+                Text('Tingkat Kesulitan', style: AppTextStyles.smallBold),
+
+                const SizedBox(height: AppSizes.spaceS),
+
+                DropdownButtonFormField<String>(
+                  value: _difficulty,
+                  decoration: const InputDecoration(),
+                  items: const [
+                    DropdownMenuItem(value: 'Easy', child: Text('Easy')),
+                    DropdownMenuItem(value: 'Medium', child: Text('Medium')),
+                    DropdownMenuItem(value: 'Hard', child: Text('Hard')),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _difficulty = value ?? 'Easy';
+                    });
+                  },
+                ),
+
                 const SizedBox(height: AppSizes.spaceL),
                 Text('URL Gambar Utama', style: AppTextStyles.smallBold),
                 const SizedBox(height: AppSizes.spaceS),

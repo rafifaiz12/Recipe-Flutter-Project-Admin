@@ -32,7 +32,10 @@ class RecipeModel {
   final List<RecipeIngredient> ingredients;
   final List<String> steps;
   final String status;
-  final String rating;
+  final int cookTimeMinutes;
+  final String difficulty;
+  final double ratingAverage;
+  final int reviewCount;
   final String imageUrl;
   final dynamic createdAt;
 
@@ -44,7 +47,10 @@ class RecipeModel {
     required this.ingredients,
     required this.steps,
     required this.status,
-    required this.rating,
+    required this.cookTimeMinutes,
+    required this.difficulty,
+    required this.ratingAverage,
+    required this.reviewCount,
     required this.imageUrl,
     this.createdAt,
   });
@@ -76,14 +82,29 @@ class RecipeModel {
 
     return RecipeModel(
       id: id.isNotEmpty ? id : map['id']?.toString() ?? '',
+
       title: map['title']?.toString() ?? '',
+
       description: map['description']?.toString() ?? '',
+
       categories: _toStringList(map['categories']),
+
       ingredients: parsedIngredients,
+
       steps: _toStringList(map['steps']),
+
       status: map['status']?.toString() ?? 'Draft',
-      rating: map['rating']?.toString() ?? '—',
+
+      cookTimeMinutes: (map['cookTimeMinutes'] as num?)?.toInt() ?? 0,
+
+      difficulty: map['difficulty']?.toString() ?? 'Easy',
+
+      ratingAverage: (map['ratingAverage'] as num?)?.toDouble() ?? 0.0,
+
+      reviewCount: (map['reviewCount'] as num?)?.toInt() ?? 0,
+
       imageUrl: map['imageUrl']?.toString() ?? '',
+
       createdAt: map['createdAt'],
     );
   }
@@ -96,7 +117,10 @@ class RecipeModel {
       'ingredients': ingredients.map((item) => item.toMap()).toList(),
       'steps': steps,
       'status': status,
-      'rating': rating,
+      'cookTimeMinutes': cookTimeMinutes,
+      'difficulty': difficulty,
+      'ratingAverage': ratingAverage,
+      'reviewCount': reviewCount,
       'imageUrl': imageUrl,
       'createdAt': createdAt,
     };
@@ -122,7 +146,10 @@ class RecipeModel {
     List<RecipeIngredient>? ingredients,
     List<String>? steps,
     String? status,
-    String? rating,
+    int? cookTimeMinutes,
+    String? difficulty,
+    double? ratingAverage,
+    int? reviewCount,
     String? imageUrl,
     dynamic createdAt,
   }) {
@@ -134,7 +161,10 @@ class RecipeModel {
       ingredients: ingredients ?? this.ingredients,
       steps: steps ?? this.steps,
       status: status ?? this.status,
-      rating: rating ?? this.rating,
+      cookTimeMinutes: cookTimeMinutes ?? this.cookTimeMinutes,
+      difficulty: difficulty ?? this.difficulty,
+      ratingAverage: ratingAverage ?? this.ratingAverage,
+      reviewCount: reviewCount ?? this.reviewCount,
       imageUrl: imageUrl ?? this.imageUrl,
       createdAt: createdAt ?? this.createdAt,
     );
