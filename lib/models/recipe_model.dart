@@ -37,6 +37,7 @@ class RecipeModel {
   final double ratingAverage;
   final int reviewCount;
   final String imageUrl;
+  final bool trending;
   final dynamic createdAt;
 
   const RecipeModel({
@@ -52,6 +53,7 @@ class RecipeModel {
     required this.ratingAverage,
     required this.reviewCount,
     required this.imageUrl,
+    this.trending = false,
     this.createdAt,
   });
 
@@ -105,6 +107,8 @@ class RecipeModel {
 
       imageUrl: map['imageUrl']?.toString() ?? '',
 
+      trending: map['trending'] ?? false,
+
       createdAt: map['createdAt'],
     );
   }
@@ -122,6 +126,7 @@ class RecipeModel {
       'ratingAverage': ratingAverage,
       'reviewCount': reviewCount,
       'imageUrl': imageUrl,
+      'trending': trending,
       'createdAt': createdAt,
     };
   }
@@ -151,6 +156,7 @@ class RecipeModel {
     double? ratingAverage,
     int? reviewCount,
     String? imageUrl,
+    bool? trending,
     dynamic createdAt,
   }) {
     return RecipeModel(
@@ -166,6 +172,7 @@ class RecipeModel {
       ratingAverage: ratingAverage ?? this.ratingAverage,
       reviewCount: reviewCount ?? this.reviewCount,
       imageUrl: imageUrl ?? this.imageUrl,
+      trending: trending ?? this.trending,
       createdAt: createdAt ?? this.createdAt,
     );
   }
