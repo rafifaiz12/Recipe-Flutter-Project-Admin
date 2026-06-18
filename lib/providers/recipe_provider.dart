@@ -94,11 +94,16 @@ class RecipeProvider extends ChangeNotifier {
       final title = recipe.title.toLowerCase();
 
       final matchesSearch = query.isEmpty || title.contains(query);
+
       final matchesStatus =
           selectedStatus == 'Semua Status' || recipe.status == selectedStatus;
+
       final matchesCategory =
           selectedCategory == 'Semua Kategori' ||
-          recipe.categories.contains(selectedCategory);
+          recipe.dishType == selectedCategory ||
+          recipe.cuisine == selectedCategory ||
+          recipe.mealType == selectedCategory ||
+          recipe.dietType == selectedCategory;
 
       return matchesSearch && matchesStatus && matchesCategory;
     }).toList();

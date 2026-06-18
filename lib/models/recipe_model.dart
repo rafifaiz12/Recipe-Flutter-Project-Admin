@@ -28,7 +28,10 @@ class RecipeModel {
   final String id;
   final String title;
   final String description;
-  final List<String> categories;
+  final String dishType;
+  final String cuisine;
+  final String mealType;
+  final String dietType;
   final List<RecipeIngredient> ingredients;
   final List<String> steps;
   final String status;
@@ -44,7 +47,10 @@ class RecipeModel {
     required this.id,
     required this.title,
     required this.description,
-    required this.categories,
+    required this.dishType,
+    required this.cuisine,
+    required this.mealType,
+    required this.dietType,
     required this.ingredients,
     required this.steps,
     required this.status,
@@ -89,7 +95,10 @@ class RecipeModel {
 
       description: map['description']?.toString() ?? '',
 
-      categories: _toStringList(map['categories']),
+      dishType: map['dishType']?.toString() ?? '',
+      cuisine: map['cuisine']?.toString() ?? '',
+      mealType: map['mealType']?.toString() ?? '',
+      dietType: map['dietType']?.toString() ?? '',
 
       ingredients: parsedIngredients,
 
@@ -117,7 +126,10 @@ class RecipeModel {
     return {
       'title': title,
       'description': description,
-      'categories': categories,
+      'dishType': dishType,
+      'cuisine': cuisine,
+      'mealType': mealType,
+      'dietType': dietType,
       'ingredients': ingredients.map((item) => item.toMap()).toList(),
       'steps': steps,
       'status': status,
@@ -147,7 +159,10 @@ class RecipeModel {
     String? id,
     String? title,
     String? description,
-    List<String>? categories,
+    String? dishType,
+    String? cuisine,
+    String? mealType,
+    String? dietType,
     List<RecipeIngredient>? ingredients,
     List<String>? steps,
     String? status,
@@ -163,7 +178,10 @@ class RecipeModel {
       id: id ?? this.id,
       title: title ?? this.title,
       description: description ?? this.description,
-      categories: categories ?? this.categories,
+      dishType: dishType ?? this.dishType,
+      cuisine: cuisine ?? this.cuisine,
+      mealType: mealType ?? this.mealType,
+      dietType: dietType ?? this.dietType,
       ingredients: ingredients ?? this.ingredients,
       steps: steps ?? this.steps,
       status: status ?? this.status,

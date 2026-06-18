@@ -5,6 +5,7 @@ import 'package:siresep_admin/core/constants/app_sizes.dart';
 import 'package:siresep_admin/core/constants/app_text_styles.dart';
 import 'package:siresep_admin/models/recipe_model.dart';
 import 'package:siresep_admin/providers/recipe_provider.dart';
+import 'package:siresep_admin/core/constants/recipe_categories.dart';
 
 class RecipeFormDialog extends StatefulWidget {
   final Map<String, dynamic>? recipe;
@@ -28,15 +29,10 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
   final List<TextEditingController> _ingredientUnitControllers = [];
   final List<TextEditingController> _stepControllers = [];
 
-  final List<String> _categories = [
-    'Makanan Utama',
-    'Nusantara',
-    'Western',
-    'Dessert',
-    'Minuman',
-  ];
-
-  final List<String> _selectedCategories = [];
+  String _selectedDishType = RecipeCategories.dishTypes.first;
+  String _selectedCuisine = RecipeCategories.cuisines.first;
+  String _selectedMealType = RecipeCategories.mealTypes.first;
+  String _selectedDietType = RecipeCategories.dietTypes.first;
   String _status = 'Draft';
   String _difficulty = 'Easy';
   bool _isSubmitting = false;
@@ -68,9 +64,21 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
       _status = widget.recipe?['status']?.toString() ?? 'Draft';
       _difficulty = widget.recipe?['difficulty']?.toString() ?? 'Easy';
 
-      _selectedCategories.addAll(
-        List<String>.from(widget.recipe?['categories'] as List? ?? []),
-      );
+      _selectedDishType =
+          widget.recipe?['dishType']?.toString() ??
+          RecipeCategories.dishTypes.first;
+
+      _selectedCuisine =
+          widget.recipe?['cuisine']?.toString() ??
+          RecipeCategories.cuisines.first;
+
+      _selectedMealType =
+          widget.recipe?['mealType']?.toString() ??
+          RecipeCategories.mealTypes.first;
+
+      _selectedDietType =
+          widget.recipe?['dietType']?.toString() ??
+          RecipeCategories.dietTypes.first;
 
       final rawIngredients = widget.recipe?['ingredients'];
       final ingredients = <Map<String, dynamic>>[];
@@ -187,21 +195,11 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
     });
   }
 
-  void _toggleCategory(String category) {
-    setState(() {
-      if (_selectedCategories.contains(category)) {
-        _selectedCategories.remove(category);
-      } else {
-        _selectedCategories.add(category);
-      }
-    });
-  }
-
   Future<void> _submit() async {
     final title = _titleController.text.trim();
     final description = _descriptionController.text.trim();
 
-    if (title.isEmpty || description.isEmpty || _selectedCategories.isEmpty) {
+    if (title.isEmpty || description.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Judul, deskripsi, dan kategori wajib diisi.'),
@@ -236,7 +234,10 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
         id: widget.recipe?['id']?.toString() ?? '',
         title: title,
         description: description,
-        categories: List<String>.from(_selectedCategories),
+        dishType: _selectedDishType,
+        cuisine: _selectedCuisine,
+        mealType: _selectedMealType,
+        dietType: _selectedDietType,
         ingredients: ingredients,
         steps: steps,
         status: _status,
@@ -325,24 +326,80 @@ class _RecipeFormDialogState extends State<RecipeFormDialog> {
                   ),
                 ),
                 const SizedBox(height: AppSizes.spaceL),
-                Text('Kategori *', style: AppTextStyles.smallBold),
+                Text('Dish Type *', style: AppTextStyles.smallBold),
                 const SizedBox(height: AppSizes.spaceS),
                 Wrap(
                   spacing: AppSizes.spaceS,
                   runSpacing: AppSizes.spaceS,
-                  children: _categories.map((category) {
-                    final selected = _selectedCategories.contains(category);
-
+                  children: RecipeCategories.dishTypes.map((item) {
                     return ChoiceChip(
-                      label: Text(category),
-                      selected: selected,
-                      selectedColor: AppColors.primary,
-                      backgroundColor: AppColors.inputBg,
-                      labelStyle: AppTextStyles.caption.copyWith(
-                        color: selected ? Colors.white : AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      onSelected: (_) => _toggleCategory(category),
+                      label: Text(item),
+                      selected: _selectedDishType == item,
+                      onSelected: (_) {
+                        setState(() {
+                          _selectedDishType = item;
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: AppSizes.spaceL),
+
+                Text('Cuisine *', style: AppTextStyles.smallBold),
+                const SizedBox(height: AppSizes.spaceS),
+
+                Wrap(
+                  spacing: AppSizes.spaceS,
+                  runSpacing: AppSizes.spaceS,
+                  children: RecipeCategories.cuisines.map((item) {
+                    return ChoiceChip(
+                      label: Text(item),
+                      selected: _selectedCuisine == item,
+                      onSelected: (_) {
+                        setState(() {
+                          _selectedCuisine = item;
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: AppSizes.spaceL),
+
+                Text('Meal Type *', style: AppTextStyles.smallBold),
+                const SizedBox(height: AppSizes.spaceS),
+
+                Wrap(
+                  spacing: AppSizes.spaceS,
+                  runSpacing: AppSizes.spaceS,
+                  children: RecipeCategories.mealTypes.map((item) {
+                    return ChoiceChip(
+                      label: Text(item),
+                      selected: _selectedMealType == item,
+                      onSelected: (_) {
+                        setState(() {
+                          _selectedMealType = item;
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: AppSizes.spaceL),
+
+                Text('Diet Type *', style: AppTextStyles.smallBold),
+                const SizedBox(height: AppSizes.spaceS),
+
+                Wrap(
+                  spacing: AppSizes.spaceS,
+                  runSpacing: AppSizes.spaceS,
+                  children: RecipeCategories.dietTypes.map((item) {
+                    return ChoiceChip(
+                      label: Text(item),
+                      selected: _selectedDietType == item,
+                      onSelected: (_) {
+                        setState(() {
+                          _selectedDietType = item;
+                        });
+                      },
                     );
                   }).toList(),
                 ),

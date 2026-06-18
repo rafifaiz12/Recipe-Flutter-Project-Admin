@@ -203,11 +203,30 @@ class _RecipesViewState extends State<_RecipesView> {
             value: _selectedCategory,
             items: const [
               'Semua Kategori',
+
+              // Dish Type
               'Makanan Utama',
-              'Nusantara',
-              'Western',
               'Dessert',
               'Minuman',
+              'Snack',
+              'Appetizer',
+
+              // Cuisine
+              'Nusantara',
+              'Asian',
+              'Western',
+              'Middle Eastern',
+
+              // Meal Type
+              'Breakfast',
+              'Lunch',
+              'Dinner',
+
+              // Diet Type
+              'Regular',
+              'Vegetarian',
+              'Vegan',
+              'High Protein',
             ],
             onChanged: (value) {
               setState(() => _selectedCategory = value);
@@ -364,9 +383,12 @@ class _RecipeTableRow extends StatelessWidget {
             child: Wrap(
               spacing: AppSizes.spaceS,
               runSpacing: AppSizes.spaceS,
-              children: recipe.categories
-                  .map((category) => RecipeCategoryChip(label: category))
-                  .toList(),
+              children: [
+                RecipeCategoryChip(label: recipe.dishType),
+                RecipeCategoryChip(label: recipe.cuisine),
+                RecipeCategoryChip(label: recipe.mealType),
+                RecipeCategoryChip(label: recipe.dietType),
+              ],
             ),
           ),
           Expanded(
