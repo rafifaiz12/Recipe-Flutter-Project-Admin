@@ -55,12 +55,6 @@ class AdminSidebar extends StatelessWidget {
             onTap: () => _goTo(context, AdminRoutes.recipes),
           ),
           AdminSidebarItem(
-            icon: Icons.sell_outlined,
-            label: 'Kategori',
-            isSelected: currentRoute == AdminRoutes.categories,
-            onTap: () => _goTo(context, AdminRoutes.categories),
-          ),
-          AdminSidebarItem(
             icon: Icons.calendar_month_outlined,
             label: 'Meal Plan',
             isSelected: currentRoute == AdminRoutes.mealPlan,
